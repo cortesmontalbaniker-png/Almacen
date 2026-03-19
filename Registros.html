@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registros</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <header>
+        <h1>Control de Inventario 📦</h1>
+        <nav>
+            <a href="index.html">Inicio</a>
+            <a href="Registros.html">Registros</a>
+        </nav>
+    </header>
+
+    <main>
+
+        <section class="seccion-tabla">
+
+            <div class="contenedor-tabla">
+
+                <h2>Registros almacenados    📋</h2>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Marca</th>
+                            <th>Modelo</th>
+                            <th>Nº Serie</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tablaRegistros">
+                        </tbody>
+
+                </table>
+
+                  <div class="acciones-tabla">
+                    <button onclick="borrarRegistros()">🗑️ Borrar todos</button>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        function cargarRegistros() {
+            let registros = JSON.parse(localStorage.getItem("registros")) || [];
+            const tabla = document.getElementById("tablaRegistros");
+
+            tabla.innerHTML = "";
+
+            registros.forEach(reg => {
+                let fila = `
+                    <tr>
+                        <td>${reg.tipo}</td>
+                        <td>${reg.marca}</td>
+                        <td>${reg.modelo}</td>
+                        <td>${reg.serie}</td>
+                    </tr>
+                `;
+                tabla.innerHTML += fila;
+            });
+        }
+
+        function borrarRegistros() {
+            if (confirm("¿Seguro que quieres borrar todos los registros?")) {
+                localStorage.removeItem("registros");
+                cargarRegistros();
+            }
+        }
+
+        cargarRegistros();
+    </script>
+
+</body>
+</html>

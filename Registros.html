@@ -3,25 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <title>Registros</title>
-    <link rel="stylesheet" href="estilos.css">
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
 
-    <header>
-        <h1>Control de Inventario 📦</h1>
-        <nav>
-            <a href="index.html">Inicio</a>
-            <a href="Registros.html">Registros</a>
-        </nav>
-    </header>
+<div class="xp-window">
 
-    <main>
+    <div class="xp-titlebar">
+        <span class="xp-title">Control de Inventario</span>
+        <div class="xp-buttons">
+            <button class="xp-btn">_</button>
+            <button class="xp-btn">□</button>
+            <button class="xp-btn">X</button>
+        </div>
+    </div>
 
-        <section class="seccion-tabla">
+    <div class="xp-tabs">
+        <a href="index.html" class="xp-tab">Inicio</a>
+        <a href="Registros.html" class="xp-tab active">Registros</a>
+    </div>
 
-            <div class="contenedor-tabla">
+    <div class="xp-content">
 
-                <h2>Registros almacenados    📋</h2>
+        <main>
+
+            <section class="seccion-tabla">
+
+                <div class="contenedor-tabla">
+                    <h2>Registros almacenados 📋</h2>
                 </div>
 
                 <table>
@@ -34,48 +43,23 @@
                         </tr>
                     </thead>
 
-                    <tbody id="tablaRegistros">
-                        </tbody>
+                    <tbody id="tablaRegistros"></tbody>
 
                 </table>
 
-                  <div class="acciones-tabla">
+                <div class="acciones-tabla">
                     <button onclick="borrarRegistros()">🗑️ Borrar todos</button>
-            </div>
+                </div>
 
-        </section>
+            </section>
 
-    </main>
+        </main>
 
-    <script>
-        function cargarRegistros() {
-            let registros = JSON.parse(localStorage.getItem("registros")) || [];
-            const tabla = document.getElementById("tablaRegistros");
+        <script src="index.js"></script>
 
-            tabla.innerHTML = "";
+    </div> <!-- xp-content -->
 
-            registros.forEach(reg => {
-                let fila = `
-                    <tr>
-                        <td>${reg.tipo}</td>
-                        <td>${reg.marca}</td>
-                        <td>${reg.modelo}</td>
-                        <td>${reg.serie}</td>
-                    </tr>
-                `;
-                tabla.innerHTML += fila;
-            });
-        }
-
-        function borrarRegistros() {
-            if (confirm("¿Seguro que quieres borrar todos los registros?")) {
-                localStorage.removeItem("registros");
-                cargarRegistros();
-            }
-        }
-
-        cargarRegistros();
-    </script>
+</div> <!-- xp-window -->
 
 </body>
 </html>

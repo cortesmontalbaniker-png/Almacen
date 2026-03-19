@@ -1,12 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registros del Almacén</title>
-    <link rel="stylesheet" href="index.css">
+    <title>Registro de Dispositivos</title>
+    <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
-    
+
+    <header>
+        <h1>Control de Inventario 📦</h1>
+        <nav>
+            <a href="index.html">Inicio</a>
+            <a href="Registros.html">Registros</a>
+        </nav>
+    </header>
+
+    <main>
+
+        <section class="seccion-formulario">
+
+            <div class="contenedor">
+
+                <form id="formulario">
+
+    <div class="grupo">
+        <div class="campo">
+            <label>Tipo de dispositivo</label>
+            <input type="text" id="tipo" placeholder="Ej: PC, Portatil" required>
+        </div>
+
+        <div class="campo">
+            <label>Marca</label>
+            <input type="text" id="marca" placeholder="Ej: HP, Dell" required>
+        </div>
+    </div>
+
+    <div class="grupo">
+        <div class="campo">
+            <label>Modelo</label>
+            <input type="text" id="modelo" required>
+        </div>
+
+        <div class="campo">
+            <label>Número de serie</label>
+            <input type="text" id="serie" required>
+        </div>
+    </div>
+
+    <div class="acciones">
+        <button type="submit">Guardar Registro</button>
+    </div>
+
+</form>
+
+<script>
+document.getElementById("formulario").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const tipo = document.getElementById("tipo").value;
+    const marca = document.getElementById("marca").value;
+    const modelo = document.getElementById("modelo").value;
+    const serie = document.getElementById("serie").value;
+
+    const nuevoRegistro = { tipo, marca, modelo, serie };
+
+    let registros = JSON.parse(localStorage.getItem("registros")) || [];
+    registros.push(nuevoRegistro);
+
+    localStorage.setItem("registros", JSON.stringify(registros));
+
+    alert("Registro guardado");
+
+    this.reset();
+});
+</script>
+            </div>
+
+        </section>
+
+    </main>
+
 </body>
 </html>

@@ -1,55 +1,63 @@
-// Variable para guardar los datos en la memoria del navegador
 let inventario = [];
 
-// FUNCIÓN PARA CONECTAR Y CARGAR EL ARCHIVO JSON
+// Cargar los datos del archivo JSON
 async function cargarDatos() {
     try {
-        // Buscamos el archivo en tu repositorio
         const respuesta = await fetch("almacen.json");
-        inventario = await respuesta.json();
+        if (!respuesta.ok) throw new Error("No se pudo cargar almacen.json");
         
-        console.log("Datos cargados correctamente");
+        inventario = await respuesta.json();
+        console.log("Datos cargados:", inventario);
         mostrarEnTabla();
     } catch (error) {
-        console.error("Error al cargar el archivo json:", error);
+        console.error("Error:", error);
     }
 }
 
-// FUNCIÓN PARA MOSTRAR LOS DATOS EN TU TABLA XP
+// Dibujar la tabla en Registros.html
 function mostrarEnTabla() {
     const tabla = document.getElementById("tablaRegistros");
-    if (!tabla) return;
+    if (!tabla) return; // Si no estamos en la página de registros, salimos
 
-    tabla.innerHTML = ""; // Limpiamos la tabla
+    tabla.innerHTML = ""; // Limpiar tabla
 
     inventario.forEach(reg => {
         let fila = `
             <tr>
-                <td>${reg.tipo}</td>
-                <td>${reg.modelo}</td>
+                <td>${reg.tipo || '-'}</td>
+                <td>${reg.marca || '-'}</td>
+                <td>${reg.modelo || '-'}</td>
                 <td>${reg.serie || 'S/N'}</td>
             </tr>`;
         tabla.innerHTML += fila;
     });
 }
 
-// EVENTO DEL FORMULARIO PARA AGREGAR NUEVOS
-document.getElementById("formulario").addEventListener("submit", function(e) {
-    e.preventDefault();
+// Configurar el formulario (solo si estamos en index.html)
+const formulario = document.getElementById("formulario");
+if (formulario) {
+    formulario.addEventListener("submit", function(e) {
+        e.preventDefault();
+        
+        const nuevo = {
+            tipo: document.getElementById("tipo").value,
+            marca: document.getElementById("marca").value,
+            modelo: document.getElementById("modelo").value,
+            serie: document.getElementById("serie").value
+        };
 
-    const nuevo = {
-        tipo: document.getElementById("tipo").value,
-        modelo: document.getElementById("modelo").value,
-        serie: document.getElementById("serie").value
-    };
+        alert("Registro enviado (recuerda que para que sea permanente debes editar almacen.json en GitHub)");
+        this.reset();
+    });
+}
 
-    // Lo añadimos a la lista actual
-    inventario.push(nuevo);
-    alert("Equipo registrado en la sesión actual");
-    
-    mostrarEnTabla();
-    this.reset();
-});
+// Función para el botón de borrar (solo borra la vista visual)
+function borrarRegistros() {
+    if (confirm("¿Seguro que quieres limpiar la vista? Los datos del archivo JSON no se borrarán.")) {
+        const tabla = document.getElementById("tablaRegistros");
+        if (tabla) tabla.innerHTML = "";
+    }
+}
 
-// Arrancamos la carga al abrir la página
+// Iniciar carga
 cargarDatos();

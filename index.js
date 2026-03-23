@@ -1,63 +1,43 @@
-let inventario = [];
+let db;
 
-// Cargar los datos del archivo JSON
-async function cargarDatos() {
-    try {
-        const respuesta = await fetch("almacen.json");
-        if (!respuesta.ok) throw new Error("No se pudo cargar almacen.json");
-        
-        inventario = await respuesta.json();
-        console.log("Datos cargados:", inventario);
-        mostrarEnTabla();
-    } catch (error) {
-        console.error("Error:", error);
-    }
+async function cargarBaseDeDatos() {
+    // 1. Iniciamos el motor SQL
+    const SQL = await initSqlJs({
+        locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+    });
+
+    // 2. Traemos tu archivo almacen.db desde GitHub
+    const dataPromise = await fetch("almacen.db");
+    const buffer = await dataPromise.arrayBuffer();
+
+    // 3. Abrimos la base de datos
+    db = new SQL.Database(new Uint8Array(buffer));
+    console.log("¡Conectado a almacen.db con éxito!");
+    
+    dibujarTabla();
 }
 
-// Dibujar la tabla en Registros.html
-function mostrarEnTabla() {
+function dibujarTabla() {
     const tabla = document.getElementById("tablaRegistros");
-    if (!tabla) return; // Si no estamos en la página de registros, salimos
+    if (!tabla || !db) return;
 
-    tabla.innerHTML = ""; // Limpiar tabla
+    // Hacemos la consulta SQL a tu tabla
+    const consulta = db.exec("SELECT tipo, modelo, numero_serie FROM Inventario_Equipos");
+    
+    if (consulta.length > 0) {
+        const filas = consulta[0].values;
+        tabla.innerHTML = ""; // Limpiamos la tabla
 
-    inventario.forEach(reg => {
-        let fila = `
-            <tr>
-                <td>${reg.tipo || '-'}</td>
-                <td>${reg.marca || '-'}</td>
-                <td>${reg.modelo || '-'}</td>
-                <td>${reg.serie || 'S/N'}</td>
-            </tr>`;
-        tabla.innerHTML += fila;
-    });
-}
-
-// Configurar el formulario (solo si estamos en index.html)
-const formulario = document.getElementById("formulario");
-if (formulario) {
-    formulario.addEventListener("submit", function(e) {
-        e.preventDefault();
-        
-        const nuevo = {
-            tipo: document.getElementById("tipo").value,
-            marca: document.getElementById("marca").value,
-            modelo: document.getElementById("modelo").value,
-            serie: document.getElementById("serie").value
-        };
-
-        alert("Registro enviado (recuerda que para que sea permanente debes editar almacen.json en GitHub)");
-        this.reset();
-    });
-}
-
-// Función para el botón de borrar (solo borra la vista visual)
-function borrarRegistros() {
-    if (confirm("¿Seguro que quieres limpiar la vista? Los datos del archivo JSON no se borrarán.")) {
-        const tabla = document.getElementById("tablaRegistros");
-        if (tabla) tabla.innerHTML = "";
+        filas.forEach(dato => {
+            tabla.innerHTML += `
+                <tr>
+                    <td>${dato[0]}</td>
+                    <td>${dato[1]}</td>
+                    <td>${dato[2] || '---'}</td>
+                </tr>`;
+        });
     }
 }
 
-// Iniciar carga
-cargarDatos();
+// Iniciar todo
+cargarBaseDeDatos();

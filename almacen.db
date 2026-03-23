@@ -19,7 +19,7 @@ INSERT INTO Inventario_Equipos (tipo, modelo, numero_serie) VALUES
 ('Portatil', 'energy start', '7DMCGG4'), ('Portatil', 'energy start', '6WGCGG4'),
 ('Portatil', 'energy start', 'CS5DGG4'), ('Portatil', 'energy start', 'J81DGG4'),
 ('Portatil', 'energy start', '64PBGG4'), ('Portatil', 'energy start', 'DRGCGG4'),
-('Portatil', 'Tenergy start', '77PBGG4');
+('Portatil', 'energy start', '77PBGG4');
 
 -- 3. INSERCIÓN DE LOS 34 CASCOS (Sin número de serie)
 INSERT INTO Inventario_Equipos (tipo, modelo, numero_serie) VALUES 

@@ -54,11 +54,10 @@ function mostrarDialogoCustom(config) {
     message.textContent = config.message || "";
     actions.innerHTML = ""; 
 
-    // 🔥 Configurar input de texto
     if (inputContainer) {
         if (config.tipo === 'prompt') {
             inputContainer.style.display = "block";
-            inputContainer.value = ""; // Limpiar
+            inputContainer.value = ""; 
         } else {
             inputContainer.style.display = "none";
         }
@@ -94,7 +93,6 @@ function mostrarDialogoCustom(config) {
     }
 
     modal.style.display = "flex";
-    // Auto-focus en el prompt para teclear rápido
     if (config.tipo === 'prompt' && inputContainer) {
         setTimeout(() => inputContainer.focus(), 50);
     }
@@ -116,7 +114,6 @@ function mostrarConfirmacionCustom(mensaje, onAccept, onCancel, titulo, textAcce
     });
 }
 
-// 🔥 Nueva Función de Prompt Custom para el Kanban
 function mostrarPromptCustom(mensaje, onAccept, onCancel, titulo) {
     mostrarDialogoCustom({
         tipo: 'prompt', title: titulo || "Introducir Datos", message: mensaje,
@@ -149,6 +146,20 @@ function cerrarSesion() {
     location.reload();
 }
 
+function cargarListaTecnicosAdmin(nombreAdmin) {
+    const selectTecnico = document.getElementById("tecnico");
+    if (!selectTecnico) return;
+    
+    let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema")) || [];
+    let otrosNombres = usuariosDB.map(u => u.nombreFormateado).filter(n => n !== nombreAdmin);
+    
+    selectTecnico.innerHTML = `<option value="${nombreAdmin}">${nombreAdmin} (Tú)</option><option value="">-- Sin asignar --</option>`;
+    
+    otrosNombres.forEach(nombre => {
+        selectTecnico.innerHTML += `<option value="${nombre}">${nombre}</option>`;
+    });
+}
+
 function verificarSeguridad() {
     const usuarioActualJSON = sessionStorage.getItem("usuarioLogueado");
     if (!usuarioActualJSON) {
@@ -166,14 +177,15 @@ function verificarSeguridad() {
 
         if (inputTecnico) {
             if (usuario.rol === "tecnico") {
-                inputTecnico.value = usuario.nombreFormateado;
-                inputTecnico.setAttribute("readonly", true);
+                inputTecnico.innerHTML = `<option value="${usuario.nombreFormateado}">${usuario.nombreFormateado}</option>`;
+                inputTecnico.disabled = true;
                 inputTecnico.style.opacity = "0.6"; 
                 if (btnNuevoTecnico) btnNuevoTecnico.style.display = "none";
             } else if (usuario.rol === "admin") {
-                inputTecnico.removeAttribute("readonly");
+                inputTecnico.disabled = false;
                 inputTecnico.style.opacity = "1";
                 if (btnNuevoTecnico) btnNuevoTecnico.style.display = "inline-block";
+                cargarListaTecnicosAdmin(usuario.nombreFormateado);
             }
         }
         return true;
@@ -201,7 +213,7 @@ if (formNuevoTecnico) {
 
         mostrarAlertaCustom(`✅ Técnico añadido: ${formatoOficial}`, "success");
         cerrarModalTecnico();
-        inicializarDesplegablesInteligentes();
+        verificarSeguridad();
     });
 }
 
@@ -233,13 +245,6 @@ function arrancarApp() {
         inicializarDragAndDrop();
     }
     renderizarHistorial('hoy');
-
-    const seriePendiente = sessionStorage.getItem('ver_detalle_serie');
-    if(seriePendiente && document.getElementById("filtro_texto")) {
-        document.getElementById("filtro_texto").value = seriePendiente;
-        filtrarTabla();
-        sessionStorage.removeItem('ver_detalle_serie'); 
-    }
 }
 
 // --- 2. LISTAS INTELIGENTES ---
@@ -248,9 +253,6 @@ function inicializarDesplegablesInteligentes() {
     let marcas = new Set(["HP", "Dell", "Lenovo"]);
     let modelos = new Set();
     let asignados = new Set();
-    
-    let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema")) || [];
-    let tecnicosOficiales = usuariosDB.filter(u => u.rol === "tecnico").map(u => u.nombreFormateado);
 
     if (db) {
         const res = db.exec("SELECT Nombre_modelo FROM Inventario");
@@ -269,7 +271,6 @@ function inicializarDesplegablesInteligentes() {
         configurarDesplegableDinámico("tipo", "lista_categorias", Array.from(categorias));
         configurarDesplegableDinámico("marca", "lista_marcas", Array.from(marcas));
         configurarDesplegableDinámico("modelo", "lista_modelos", Array.from(modelos));
-        configurarDatalist("lista_tecnicos_dl", "lista_tecnicos", tecnicosOficiales);
         configurarDatalist("lista_asignados_dl", "lista_asignados", Array.from(asignados));
     }
 
@@ -320,7 +321,6 @@ function configurarDesplegableDinámico(idSelect, storageKey, datosExtraidos) {
     let valorAnterior = select.value;
     select.addEventListener("change", function() {
         if (this.value === "OTRO_NUEVO") {
-            // Este es el prompt() original de tu código. Ahora lo pasamos al modal custom.
             mostrarPromptCustom("Introduce el nuevo valor para añadirlo a la lista:", (nuevoValor) => {
                 if (nuevoValor && nuevoValor.trim() !== "") {
                     const valorLimpio = nuevoValor.trim();
@@ -437,7 +437,7 @@ if (formulario) {
             marca: document.getElementById("marca").value,
             modelo: document.getElementById("modelo").value,
             serie: document.getElementById("serie").value,
-            tecnico: document.getElementById("tecnico").value.trim(),
+            tecnico: document.getElementById("tecnico").value, 
             estado_f: estadoFisico,
             estado_l: document.getElementById("estado_logico").value,
             asignado: document.getElementById("asignado").value.trim()
@@ -459,10 +459,43 @@ if (formulario) {
     });
 }
 
-// --- 5. SISTEMA KANBAN Y NAVEGACIÓN ---
-function verDetalles(serieEquipo) {
-    sessionStorage.setItem('ver_detalle_serie', serieEquipo);
-    window.location.href = 'Registros.html';
+// --- 5. SISTEMA KANBAN Y NAVEGACIÓN (NUEVA VENTANA MODAL) ---
+function mostrarDetalles(id_interno) {
+    let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
+    const item = temporales.find(i => i.id_interno === id_interno);
+    if (!item) return;
+
+    const iconos = { "PC": "🖥️", "Portátil": "💻", "Cascos": "🎧", "Monitor": "📺" };
+    
+    document.getElementById("detalle-icono").textContent = iconos[item.tipo] || "📦";
+    document.getElementById("detalle-titulo").textContent = `${item.tipo} ${item.marca}`;
+    document.getElementById("detalle-modelo").textContent = item.modelo;
+    
+    document.getElementById("detalle-id").textContent = item.id_interno;
+    document.getElementById("detalle-serie").textContent = item.serie;
+    document.getElementById("detalle-tecnico").textContent = item.tecnico || "Sin asignar";
+    document.getElementById("detalle-asignado").textContent = item.asignado || "Sin dueño";
+    document.getElementById("detalle-logico").textContent = item.estado_l;
+
+    const spanEstado = document.getElementById("detalle-estado");
+    spanEstado.textContent = item.estado_f;
+    
+    let colorFondo, colorTexto, colorBorde;
+    if (item.estado_f === "Disponible") { colorFondo = "rgba(16, 185, 129, 0.2)"; colorTexto = "#6ee7b7"; colorBorde = "rgba(16, 185, 129, 0.3)"; }
+    else if (item.estado_f === "En Reparación") { colorFondo = "rgba(245, 158, 11, 0.2)"; colorTexto = "#fcd34d"; colorBorde = "rgba(245, 158, 11, 0.3)"; }
+    else if (item.estado_f === "Roto") { colorFondo = "rgba(239, 68, 68, 0.2)"; colorTexto = "#fca5a5"; colorBorde = "rgba(239, 68, 68, 0.3)"; }
+    else if (item.estado_f === "Asignado") { colorFondo = "rgba(168, 85, 247, 0.2)"; colorTexto = "#d8b4fe"; colorBorde = "rgba(168, 85, 247, 0.3)"; }
+    else { colorFondo = "rgba(99, 102, 241, 0.2)"; colorTexto = "#a5b4fc"; colorBorde = "rgba(99, 102, 241, 0.3)"; }
+
+    spanEstado.style.background = colorFondo;
+    spanEstado.style.color = colorTexto;
+    spanEstado.style.border = `1px solid ${colorBorde}`;
+
+    document.getElementById("modal-detalles").style.display = "flex";
+}
+
+function cerrarModalDetalles() {
+    document.getElementById("modal-detalles").style.display = "none";
 }
 
 function inicializarDragAndDrop() {
@@ -483,7 +516,6 @@ function inicializarDragAndDrop() {
             if(itemIndex > -1 && temporales[itemIndex].estado_f !== nuevoEstado) {
                 const viejoEstado = temporales[itemIndex].estado_f;
 
-                // 🔥 AQUÍ ESTÁ EL PROMPT CUSTOM PARA ASIGNADO 🔥
                 if (nuevoEstado === "Asignado") {
                     mostrarPromptCustom("¿A quién se asigna este dispositivo?", (nombre) => {
                         if (nombre && nombre.trim() !== "") {
@@ -500,7 +532,6 @@ function inicializarDragAndDrop() {
                             renderizarKanban(); 
                         }
                     }, () => { 
-                        // Si el usuario cancela, devolvemos la tarjeta a su sitio
                         renderizarKanban(); 
                     }, "Asignar Dispositivo");
                     
@@ -529,7 +560,7 @@ function renderizarKanban() {
         tarjeta.className = 'tarjeta';
         tarjeta.draggable = true;
         tarjeta.id = "tarjeta-" + item.id_interno;
-        tarjeta.title = "Haz clic para ver detalles en la tabla";
+        tarjeta.title = "Haz clic para ver detalles del equipo";
         
         let htmlAsignado = item.asignado ? `<div class="asignado-extra" style="font-size: 11px; margin-top: 6px; color: #a855f7; font-weight: bold;">👤 Asignado a: ${item.asignado}</div>` : '';
 
@@ -555,9 +586,10 @@ function renderizarKanban() {
             setTimeout(() => { isDragging = false; }, 100);
         });
 
+        // 🔥 Ahora abre el modal en lugar de redirigir
         tarjeta.addEventListener('click', () => {
             if (!isDragging) {
-                verDetalles(item.serie);
+                mostrarDetalles(item.id_interno);
             }
         });
 

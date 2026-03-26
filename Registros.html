@@ -11,20 +11,90 @@
     <div class="modal-box">
         <h2>🔑 Iniciar Sesión</h2>
         <form id="form-login">
-            <div class="campo" style="margin-bottom: 15px;"><label>Usuario</label><input type="text" id="login-user" placeholder="Ej: admin o tecnico1" required></div>
-            <div class="campo" style="margin-bottom: 25px;"><label>Contraseña</label><input type="password" id="login-pass" placeholder="Introduce tu contraseña" required></div>
+            <div class="campo" style="margin-bottom: 15px;"><label>Usuario</label><input type="text" id="login-user" required></div>
+            <div class="campo" style="margin-bottom: 25px;"><label>Contraseña</label><input type="password" id="login-pass" required></div>
             <div class="acciones"><button type="submit" class="btn-primario" style="width: 100%;">Entrar</button></div>
         </form>
     </div>
 </div>
 
-<div id="modal-custom-dialog" class="overlay" style="display: none;">
+<div id="modal-custom-dialog" class="overlay" style="display: none; z-index: 10000;">
     <div class="modal-box" style="max-width: 400px; text-align: center;">
         <div id="dialog-icon" style="font-size: 40px; margin-bottom: 15px;"></div>
         <h2 id="dialog-title" style="font-size: 18px; margin-bottom: 10px;"></h2>
         <p id="dialog-message" style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px; line-height: 1.5;"></p>
-        <input type="text" id="dialog-input" style="display: none; width: 100%; padding: 12px; margin-bottom: 25px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white;" placeholder="Escribe aquí...">
+        <input type="text" id="dialog-input" style="display: none; width: 100%; padding: 12px; margin-bottom: 25px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white;">
         <div class="acciones" id="dialog-actions" style="justify-content: center;"></div>
+    </div>
+</div>
+
+<div id="modal-detalles" class="overlay" style="display: none;">
+    <div class="modal-box" style="max-width: 550px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span id="detalle-icono" style="font-size: 38px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">📦</span> 
+                <div>
+                    <h2 id="detalle-titulo" style="margin: 0; text-align: left; font-size: 22px; color: white;">Tipo Marca</h2>
+                    <div id="detalle-modelo" style="font-size: 14px; color: #8b949e; margin-top: 4px;">Modelo</div>
+                </div>
+            </div>
+            <button onclick="cerrarModalDetalles()" style="background: transparent; border: none; font-size: 20px; color: #a1a1aa; cursor: pointer; transition: color 0.2s;">✖</button>
+        </div>
+        
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; margin-bottom: 25px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div><span style="font-size: 11px; text-transform: uppercase; color: #a1a1aa; font-weight: 600;">ID Interno</span><br><strong id="detalle-id" style="color: #f8fafc; font-size: 15px; display: inline-block; margin-top: 4px;"></strong></div>
+                <div><span style="font-size: 11px; text-transform: uppercase; color: #a1a1aa; font-weight: 600;">Número de Serie</span><br><strong id="detalle-serie" style="color: #f8fafc; font-size: 15px; display: inline-block; margin-top: 4px;"></strong></div>
+                <div><span style="font-size: 11px; text-transform: uppercase; color: #a1a1aa; font-weight: 600;">Preparado por</span><br><strong id="detalle-tecnico" style="color: #f8fafc; font-size: 14px; display: inline-block; margin-top: 4px;"></strong></div>
+                <div><span style="font-size: 11px; text-transform: uppercase; color: #a1a1aa; font-weight: 600;">Asignado a</span><br><strong id="detalle-asignado" style="color: #f8fafc; font-size: 14px; display: inline-block; margin-top: 4px;"></strong></div>
+                <div><span style="font-size: 11px; text-transform: uppercase; color: #a1a1aa; font-weight: 600;">Estado Lógico</span><br><strong id="detalle-logico" style="color: #f8fafc; font-size: 14px; display: inline-block; margin-top: 4px;"></strong></div>
+                <div><span style="font-size: 11px; text-transform: uppercase; color: #a1a1aa; font-weight: 600;">Estado Físico</span><br><span id="detalle-estado" style="display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-top: 6px;"></span></div>
+            </div>
+        </div>
+        
+        <div class="acciones" style="display: flex; gap: 10px;">
+            <button id="btn-abrir-editar" class="btn-secundario" onclick="abrirModalEditar()" style="flex: 1; border-color: #8b5cf6; color: #d8b4fe;">✏️ Editar Equipo</button>
+            <button class="btn-primario" onclick="cerrarModalDetalles()" style="flex: 1;">Cerrar Detalles</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-editar" class="overlay" style="display: none; z-index: 1000;">
+    <div class="modal-box" style="max-width: 650px;">
+        <h2>✏️ Editar Dispositivo</h2>
+        <form id="form-editar">
+            <input type="hidden" id="edit_id">
+            <div class="grupo">
+                <div class="campo"><label>Categoría</label><select id="edit_tipo" required></select></div>
+                <div class="campo"><label>Marca</label><select id="edit_marca" required></select></div>
+            </div>
+            <div class="grupo">
+                <div class="campo"><label>Modelo</label><select id="edit_modelo" required></select></div>
+                <div class="campo"><label>Número de Serie</label><input type="text" id="edit_serie" required></div>
+            </div>
+            <div class="grupo">
+                <div class="campo"><label>Técnico</label><select id="edit_tecnico"></select></div>
+                <div class="campo"><label>Estado Físico</label>
+                    <select id="edit_estado_fisico" required>
+                        <option value="Para Formatear">Para Formatear</option>
+                        <option value="Disponible">Disponible</option>
+                        <option value="Asignado">Asignado</option>
+                        <option value="En Reparación">En Reparación</option>
+                        <option value="Roto">Roto</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grupo">
+                <div class="campo"><label>Estado Lógico</label>
+                    <select id="edit_estado_logico" required><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select>
+                </div>
+                <div class="campo"><label>Dueño Final</label><input type="text" id="edit_asignado" list="lista_asignados_dl" autocomplete="off"></div>
+            </div>
+            <div class="acciones">
+                <button type="button" class="btn-secundario" onclick="document.getElementById('modal-editar').style.display='none'">Cancelar</button>
+                <button type="submit" class="btn-primario">💾 Guardar Cambios</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -70,7 +140,8 @@
                     </thead>
                     <tbody id="tablaRegistros"></tbody>
                 </table>
-                <div class="acciones" style="margin-top: 20px;">
+                <div class="acciones" style="margin-top: 20px; justify-content: space-between;">
+                    <button class="btn-exito" onclick="exportarExcel()">⬇️ Exportar a Excel (CSV)</button>
                     <button id="btn-borrar-seleccionados" class="btn-peligro" onclick="borrarSeleccionados()">🗑️ Borrar seleccionados</button>
                 </div>
             </section>

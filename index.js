@@ -240,6 +240,7 @@ async function conectarDB() {
 function arrancarApp() {
     inicializarDesplegablesInteligentes();
     mostrarTodoTabla();
+    actualizarDashboard();
     if(document.querySelector('.tablero-kanban')) {
         renderizarKanban();
         inicializarDragAndDrop();
@@ -247,12 +248,36 @@ function arrancarApp() {
     renderizarHistorial('hoy');
 }
 
-// --- 2. LISTAS INTELIGENTES ---
+// --- 🔥 MINI-DASHBOARD ---
+function actualizarDashboard() {
+    const dTotal = document.getElementById("dash-total");
+    const dDisp = document.getElementById("dash-disp");
+    const dRep = document.getElementById("dash-rep");
+    const dRoto = document.getElementById("dash-roto");
+    
+    if(!dTotal) return;
+
+    let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
+    
+    let disponibles = temporales.filter(t => t.estado_f === "Disponible").length;
+    let enReparacion = temporales.filter(t => t.estado_f === "En Reparación").length;
+    let rotos = temporales.filter(t => t.estado_f === "Roto").length;
+
+    dTotal.textContent = temporales.length;
+    dDisp.textContent = disponibles;
+    dRep.textContent = enReparacion;
+    dRoto.textContent = rotos;
+}
+
+// --- 2. LISTAS INTELIGENTES Y EDICIÓN ---
 function inicializarDesplegablesInteligentes() {
     let categorias = new Set(["Portátil", "Monitor", "Cascos", "PC"]);
     let marcas = new Set(["HP", "Dell", "Lenovo"]);
     let modelos = new Set();
     let asignados = new Set();
+    
+    let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema")) || [];
+    let tecnicosOficiales = usuariosDB.map(u => u.nombreFormateado);
 
     if (db) {
         const res = db.exec("SELECT Nombre_modelo FROM Inventario");
@@ -272,6 +297,16 @@ function inicializarDesplegablesInteligentes() {
         configurarDesplegableDinámico("marca", "lista_marcas", Array.from(marcas));
         configurarDesplegableDinámico("modelo", "lista_modelos", Array.from(modelos));
         configurarDatalist("lista_asignados_dl", "lista_asignados", Array.from(asignados));
+    }
+    
+    if (document.getElementById("edit_tipo")) {
+        configurarDesplegableDinámico("edit_tipo", "lista_categorias", Array.from(categorias));
+        configurarDesplegableDinámico("edit_marca", "lista_marcas", Array.from(marcas));
+        configurarDesplegableDinámico("edit_modelo", "lista_modelos", Array.from(modelos));
+        
+        const selTec = document.getElementById("edit_tecnico");
+        selTec.innerHTML = '<option value="">-- Sin asignar --</option>';
+        tecnicosOficiales.forEach(t => selTec.innerHTML += `<option value="${t}">${t}</option>`);
     }
 
     if (document.getElementById("filtro_categoria")) {
@@ -459,11 +494,15 @@ if (formulario) {
     });
 }
 
-// --- 5. SISTEMA KANBAN Y NAVEGACIÓN (NUEVA VENTANA MODAL) ---
+// --- 5. SISTEMA MODAL DE DETALLES Y EDICIÓN (RESTRINGIDA) ---
+let idEdicionActual = null;
+
 function mostrarDetalles(id_interno) {
     let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
     const item = temporales.find(i => i.id_interno === id_interno);
     if (!item) return;
+
+    idEdicionActual = id_interno;
 
     const iconos = { "PC": "🖥️", "Portátil": "💻", "Cascos": "🎧", "Monitor": "📺" };
     
@@ -491,11 +530,70 @@ function mostrarDetalles(id_interno) {
     spanEstado.style.color = colorTexto;
     spanEstado.style.border = `1px solid ${colorBorde}`;
 
+    // 🔥 BLOQUEO DE BOTÓN DE EDICIÓN PARA TÉCNICOS AJENOS
+    const usuarioActualJSON = sessionStorage.getItem("usuarioLogueado");
+    const usuarioLogueado = usuarioActualJSON ? JSON.parse(usuarioActualJSON) : null;
+    const btnEditar = document.getElementById("btn-abrir-editar");
+
+    if (btnEditar) {
+        if (usuarioLogueado && usuarioLogueado.rol !== "admin" && item.tecnico !== usuarioLogueado.nombreFormateado) {
+            btnEditar.style.display = "none"; // El técnico no es el creador, ocultamos botón
+        } else {
+            btnEditar.style.display = "block"; // Eres el creador o eres admin, puedes editar
+        }
+    }
+
     document.getElementById("modal-detalles").style.display = "flex";
 }
 
-function cerrarModalDetalles() {
-    document.getElementById("modal-detalles").style.display = "none";
+function cerrarModalDetalles() { document.getElementById("modal-detalles").style.display = "none"; }
+
+function abrirModalEditar() {
+    cerrarModalDetalles();
+    
+    let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
+    const item = temporales.find(i => i.id_interno === idEdicionActual);
+    if (!item) return;
+
+    document.getElementById("edit_id").value = item.id_interno;
+    document.getElementById("edit_tipo").value = item.tipo;
+    document.getElementById("edit_marca").value = item.marca;
+    document.getElementById("edit_modelo").value = item.modelo;
+    document.getElementById("edit_serie").value = item.serie;
+    document.getElementById("edit_tecnico").value = item.tecnico;
+    document.getElementById("edit_estado_fisico").value = item.estado_f;
+    document.getElementById("edit_estado_logico").value = item.estado_l;
+    document.getElementById("edit_asignado").value = item.asignado || "";
+
+    document.getElementById("modal-editar").style.display = "flex";
+}
+
+const formEditar = document.getElementById("form-editar");
+if (formEditar) {
+    formEditar.addEventListener("submit", function(e) {
+        e.preventDefault();
+        let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
+        const id_interno = parseInt(document.getElementById("edit_id").value);
+        const index = temporales.findIndex(i => i.id_interno === id_interno);
+
+        if(index > -1) {
+            temporales[index].tipo = document.getElementById("edit_tipo").value;
+            temporales[index].marca = document.getElementById("edit_marca").value;
+            temporales[index].modelo = document.getElementById("edit_modelo").value;
+            temporales[index].serie = document.getElementById("edit_serie").value;
+            temporales[index].tecnico = document.getElementById("edit_tecnico").value;
+            temporales[index].estado_f = document.getElementById("edit_estado_fisico").value;
+            temporales[index].estado_l = document.getElementById("edit_estado_logico").value;
+            temporales[index].asignado = document.getElementById("edit_asignado").value.trim();
+
+            localStorage.setItem("mis_registros", JSON.stringify(temporales));
+            registrarEvento(id_interno, "editó los datos del equipo", temporales[index].estado_f, temporales[index].estado_f);
+            
+            document.getElementById("modal-editar").style.display = "none";
+            mostrarAlertaCustom(`✅ Equipo #${id_interno} actualizado.`, "success");
+            arrancarApp();
+        }
+    });
 }
 
 function inicializarDragAndDrop() {
@@ -515,6 +613,16 @@ function inicializarDragAndDrop() {
             
             if(itemIndex > -1 && temporales[itemIndex].estado_f !== nuevoEstado) {
                 const viejoEstado = temporales[itemIndex].estado_f;
+                
+                // 🔥 BLOQUEO DE ARRASTRE PARA TÉCNICOS AJENOS
+                const usuarioActualJSON = sessionStorage.getItem("usuarioLogueado");
+                const usuarioLogueado = usuarioActualJSON ? JSON.parse(usuarioActualJSON) : null;
+
+                if (usuarioLogueado && usuarioLogueado.rol !== "admin" && temporales[itemIndex].tecnico !== usuarioLogueado.nombreFormateado) {
+                    mostrarAlertaCustom("❌ No tienes permiso para mover este equipo (registrado por otro técnico).", "error");
+                    renderizarKanban(); // Devolvemos la tarjeta a su sitio visualmente
+                    return;
+                }
 
                 if (nuevoEstado === "Asignado") {
                     mostrarPromptCustom("¿A quién se asigna este dispositivo?", (nombre) => {
@@ -523,16 +631,15 @@ function inicializarDragAndDrop() {
                                 temporales[itemIndex].estado_f = nuevoEstado;
                                 temporales[itemIndex].asignado = nombre.trim();
                                 localStorage.setItem("mis_registros", JSON.stringify(temporales));
-                                renderizarKanban(); 
-                                mostrarTodoTabla(); 
+                                arrancarApp(); 
                                 registrarEvento(idItemStr, "asignado a", nombre.trim(), nuevoEstado);
-                            }, () => { renderizarKanban(); });
+                            }, () => { arrancarApp(); });
                         } else {
                             mostrarAlertaCustom("❌ Debes indicar un nombre para asignarlo.", "error");
-                            renderizarKanban(); 
+                            arrancarApp(); 
                         }
                     }, () => { 
-                        renderizarKanban(); 
+                        arrancarApp(); 
                     }, "Asignar Dispositivo");
                     
                 } else {
@@ -540,10 +647,9 @@ function inicializarDragAndDrop() {
                         temporales[itemIndex].estado_f = nuevoEstado;
                         temporales[itemIndex].asignado = "";
                         localStorage.setItem("mis_registros", JSON.stringify(temporales));
-                        renderizarKanban(); 
-                        mostrarTodoTabla(); 
+                        arrancarApp(); 
                         registrarEvento(idItemStr, "movido de " + viejoEstado + " a", nuevoEstado, nuevoEstado);
-                    }, () => { renderizarKanban(); });
+                    }, () => { arrancarApp(); });
                 }
             }
         });
@@ -586,7 +692,6 @@ function renderizarKanban() {
             setTimeout(() => { isDragging = false; }, 100);
         });
 
-        // 🔥 Ahora abre el modal en lugar de redirigir
         tarjeta.addEventListener('click', () => {
             if (!isDragging) {
                 mostrarDetalles(item.id_interno);
@@ -601,11 +706,16 @@ function renderizarKanban() {
     });
 }
 
-// --- 6. TABLA, FILTROS Y BORRADO INTELIGENTE ---
+// --- 6. TABLA Y RESTRICCIÓN DE BORRADO ---
 function mostrarTodoTabla() {
     const tabla = document.getElementById("tablaRegistros");
     if (!tabla) return;
     tabla.innerHTML = ""; 
+    
+    const usuarioActualJSON = sessionStorage.getItem("usuarioLogueado");
+    const usuarioLogueado = usuarioActualJSON ? JSON.parse(usuarioActualJSON) : null;
+
+    const iconos = { "PC": "🖥️", "Portátil": "💻", "Cascos": "🎧", "Monitor": "📺" };
 
     if (db) {
         const res = db.exec("SELECT id_inventario, Nombre_modelo, numer_serie FROM Inventario");
@@ -620,12 +730,39 @@ function mostrarTodoTabla() {
 
     let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
     temporales.forEach(reg => {
+        let badgeClass = "badge-default";
+        if (reg.estado_f === "Disponible") badgeClass = "badge-disponible";
+        else if (reg.estado_f === "En Reparación") badgeClass = "badge-reparacion";
+        else if (reg.estado_f === "Roto") badgeClass = "badge-roto";
+        else if (reg.estado_f === "Asignado") badgeClass = "badge-asignado";
+        else if (reg.estado_f === "Para Formatear") badgeClass = "badge-formatear";
+
+        let logicoClass = reg.estado_l === "Activo" ? "badge-activo" : "badge-inactivo";
+        
+        let disableCheck = "";
+        let tituloCheck = "Seleccionar para borrar";
+        
+        if (usuarioLogueado && usuarioLogueado.rol !== "admin") {
+            if (reg.tecnico !== usuarioLogueado.nombreFormateado) {
+                disableCheck = "disabled";
+                tituloCheck = "Solo el creador o un Admin puede borrar este equipo";
+            }
+        }
+
         tabla.innerHTML += `
-            <tr>
-                <td style="text-align: center;"><input type="checkbox" class="check-borrar" data-id="${reg.id_interno}"></td>
-                <td>${reg.id_interno}</td><td>${reg.tipo}</td><td>${reg.marca}</td><td>${reg.modelo}</td>
-                <td>${reg.serie}</td><td>${reg.tecnico || '-'}</td><td>${reg.estado_f}</td><td>${reg.estado_l}</td>
-                <td>${reg.asignado || 'Sin dueño'}</td>
+            <tr class="fila-interactiva" onclick="mostrarDetalles(${reg.id_interno})">
+                <td style="text-align: center;" onclick="event.stopPropagation()">
+                    <input type="checkbox" class="check-borrar" data-id="${reg.id_interno}" ${disableCheck} title="${tituloCheck}">
+                </td>
+                <td><strong>#${reg.id_interno}</strong></td>
+                <td><span style="font-size:16px; margin-right:4px;">${iconos[reg.tipo] || "📦"}</span> ${reg.tipo}</td>
+                <td>${reg.marca}</td>
+                <td>${reg.modelo}</td>
+                <td style="font-family: monospace; color: #a1a1aa;">${reg.serie}</td>
+                <td>${reg.tecnico || '<span style="color:#64748b; font-style:italic;">-</span>'}</td>
+                <td><span class="badge ${badgeClass}">${reg.estado_f}</span></td>
+                <td><span class="badge ${logicoClass}">${reg.estado_l}</span></td>
+                <td>${reg.asignado ? `👤 ${reg.asignado}` : '<span style="color:#64748b; font-style:italic;">Sin dueño</span>'}</td>
             </tr>`;
     });
 }
@@ -682,7 +819,7 @@ function actualizarBotonBorrar() {
 
 function marcarTodos(origen) {
     document.querySelectorAll('.check-borrar').forEach(cb => {
-        if(cb.closest('tr').style.display !== "none") cb.checked = origen.checked;
+        if(cb.closest('tr').style.display !== "none" && !cb.disabled) cb.checked = origen.checked;
     });
     actualizarBotonBorrar();
 }
@@ -695,25 +832,50 @@ function borrarSeleccionados() {
         let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
         const ids = Array.from(checkboxes).map(cb => parseInt(cb.getAttribute('data-id')));
         
-        ids.forEach(id => {
-            registrarEvento(id, "fue eliminado permanentemente", "Borrado", "Borrado");
-        });
+        ids.forEach(id => { registrarEvento(id, "fue eliminado permanentemente", "Borrado", "Borrado"); });
 
         temporales = temporales.filter(reg => !ids.includes(reg.id_interno));
         localStorage.setItem("mis_registros", JSON.stringify(temporales));
         
-        mostrarTodoTabla();
-        filtrarTabla(); 
-        renderizarHistorial('hoy');
-        
+        arrancarApp(); 
         const checkTodos = document.getElementById('seleccionarTodos');
         if(checkTodos) checkTodos.checked = false;
         actualizarBotonBorrar();
         
         mostrarAlertaCustom("✅ Registros eliminados correctamente.", "success");
-    }, () => {
-        // Al cancelar no hacemos nada
-    }, "¿Borrar registros?", "Borrar permanentemente", true); 
+    }, () => {}, "¿Borrar registros?", "Borrar permanentemente", true); 
+}
+
+// --- 7. EXPORTAR A EXCEL (CSV) ---
+function exportarExcel() {
+    let csv = "ID Interno,Tipo,Marca,Modelo,N. Serie,Preparado por,Estado Fisico,Estado Logico,Asignado a\n";
+    const filas = document.querySelectorAll("#tablaRegistros tr");
+    
+    let exportados = 0;
+    filas.forEach(fila => {
+        if (fila.style.display !== "none") {
+            let cols = fila.querySelectorAll("td");
+            if (cols.length > 1) { 
+                let rowData = [];
+                for(let i=1; i<cols.length; i++) { 
+                    rowData.push('"' + cols[i].innerText.replace(/"/g, '""').trim() + '"');
+                }
+                csv += rowData.join(",") + "\n";
+                exportados++;
+            }
+        }
+    });
+
+    if(exportados === 0) {
+        mostrarAlertaCustom("No hay registros para exportar con los filtros actuales.", "warning");
+        return;
+    }
+
+    const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' }); 
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "Inventario_Export_" + new Date().toLocaleDateString().replace(/\//g, '-') + ".csv";
+    link.click();
 }
 
 conectarDB();

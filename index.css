@@ -39,7 +39,7 @@ body {
 .icon-warning { color: #f59e0b; } 
 .icon-question { color: #3b82f6; } 
 
-/* --- Ventana Principal --- */
+/* --- Ventana Principal (Ensanchada a 1400px para evitar scroll) --- */
 .app-window { width: 98%; max-width: 1400px; margin: 0 auto; }
 
 /* --- Barra Superior y Menú Perfil --- */
@@ -141,7 +141,7 @@ button.btn-secundario:hover { background: rgba(255, 255, 255, 0.2); }
 /* --- Tablero Kanban (Almacén elástico sin Scroll) --- */
 .tablero-kanban { display: flex; gap: 10px; padding-bottom: 5px; overflow-x: hidden; }
 .columna {
-  flex: 1 1 0; min-width: 0; /* Regla de oro para evitar scroll horizontal */
+  flex: 1 1 0; min-width: 0; 
   background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; display: flex; flex-direction: column;
 }
 .columna h3 {
@@ -155,7 +155,7 @@ button.btn-secundario:hover { background: rgba(255, 255, 255, 0.2); }
 .tarjeta {
   background: rgba(30, 30, 46, 0.95); border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px; padding: 10px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;
-  cursor: pointer; /* Cambiado a pointer para indicar que es un botón */
+  cursor: pointer; 
   transition: transform 0.2s, box-shadow 0.2s;
 }
 .tarjeta:hover { border-color: #8b5cf6; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); transform: translateY(-2px); }

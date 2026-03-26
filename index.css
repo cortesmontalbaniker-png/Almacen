@@ -3,14 +3,8 @@
 /* --- Fondo General (Auroras) --- */
 body {
   font-family: 'Inter', sans-serif;
-  margin: 0;
-  padding: 40px 20px;
-  min-height: 100vh;
-  box-sizing: border-box;
-  color: #e2e8f0;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  margin: 0; padding: 40px 20px; min-height: 100vh; box-sizing: border-box;
+  color: #e2e8f0; display: flex; justify-content: center; align-items: flex-start;
   background-color: #0c0d16;
   background-image: 
     radial-gradient(at 10% 90%, rgba(139, 92, 246, 0.25) 0px, transparent 50%),
@@ -26,30 +20,33 @@ body {
   100% { background-position: 0% 50%; }
 }
 
-/* --- Modales (Login y Añadir Técnico) --- */
+/* --- Modales --- */
 .overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(10px);
   display: flex; justify-content: center; align-items: center; z-index: 9999;
 }
-
 .modal-box {
   background: rgba(30, 30, 46, 0.85); border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px; padding: 35px; width: 100%; max-width: 450px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); color: white;
 }
-
 .modal-box h2 { margin-top: 0; text-align: center; font-weight: 600; font-size: 22px; margin-bottom: 25px;}
 
+/* Iconos de Diálogo */
+.icon-success { color: #10b981; } 
+.icon-error { color: #ef4444; } 
+.icon-warning { color: #f59e0b; } 
+.icon-question { color: #3b82f6; } 
+
 /* --- Ventana Principal --- */
-.app-window { width: 100%; max-width: 1100px; margin: 0 auto; }
+.app-window { width: 98%; max-width: 1400px; margin: 0 auto; }
 
 /* --- Barra Superior y Menú Perfil --- */
 .app-header {
   display: flex; justify-content: space-between; align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 20px; margin-bottom: 25px;
 }
-
 .app-title { font-size: 26px; font-weight: 600; color: #ffffff; }
 
 .btn-perfil {
@@ -57,7 +54,6 @@ body {
   color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer;
   display: flex; align-items: center; gap: 10px; font-family: 'Inter', sans-serif; font-size: 14px;
 }
-
 .btn-perfil:hover { background: rgba(255, 255, 255, 0.2); }
 
 #dropdown-usuario {
@@ -68,9 +64,7 @@ body {
   display: flex; flex-direction: column; overflow: hidden; z-index: 1000;
   opacity: 0; visibility: hidden; transform: translateY(-10px); transition: all 0.2s;
 }
-
 #dropdown-usuario.mostrar { opacity: 1; visibility: visible; transform: translateY(0); }
-
 #dropdown-usuario button {
   background: transparent; border: none; color: #cbd5e1; padding: 14px 18px;
   text-align: left; cursor: pointer; font-size: 14px;
@@ -93,13 +87,12 @@ body {
   background: #8b5cf6; box-shadow: 0 -2px 10px rgba(139, 92, 246, 0.5);
 }
 
-/* --- Formulario y Filtros (Glassmorphism) --- */
+/* --- Formulario y Filtros --- */
 .contenedor-glass {
   background: rgba(255, 255, 255, 0.03); padding: 30px; border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px); margin-bottom: 30px;
 }
-
 .grupo { display: flex; gap: 30px; width: 100%; margin-bottom: 20px; }
 .campo { flex: 1; display: flex; flex-direction: column; }
 label { font-size: 12px; font-weight: 500; color: #a1a1aa; margin-bottom: 8px; text-transform: uppercase; }
@@ -115,44 +108,64 @@ input:focus, select:focus {
 }
 select option { background: #1e1e2e; color: white; }
 
+/* Botones */
 .acciones { display: flex; justify-content: flex-end; margin-top: 10px; gap: 15px; }
 button.btn-primario {
   background: #8b5cf6; color: white; border: none; padding: 12px 25px; border-radius: 10px;
   cursor: pointer; font-weight: 600; transition: all 0.3s; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
 }
 button.btn-primario:hover { background: #7c3aed; transform: translateY(-2px); }
+
 button.btn-secundario {
   background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255,255,255,0.2);
   padding: 12px 25px; border-radius: 10px; cursor: pointer; transition: all 0.3s;
 }
 button.btn-secundario:hover { background: rgba(255, 255, 255, 0.2); }
 
-/* --- Tablero Kanban (Almacén) --- */
-.tablero-kanban { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; }
+/* Botón de peligro (general para modales) SIEMPRE ACTIVO */
+.btn-peligro {
+  background: #ef4444; color: white; border: none; padding: 12px 25px; border-radius: 10px;
+  cursor: pointer; font-weight: 600; transition: all 0.3s;
+}
+.btn-peligro:hover { background: #dc2626; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
+
+/* Botón inteligente EXCLUSIVO de la tabla (desactivado hasta marcar checkbox) */
+#btn-borrar-seleccionados {
+  opacity: 0.5; pointer-events: none; transition: all 0.3s; background: #ef4444; color: white; border: none; padding: 12px 25px; border-radius: 10px; font-weight: 600;
+}
+#btn-borrar-seleccionados.activo {
+  opacity: 1; pointer-events: auto; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+}
+#btn-borrar-seleccionados.activo:hover { background: #dc2626; transform: translateY(-2px); }
+
+/* --- Tablero Kanban (Almacén elástico sin Scroll) --- */
+.tablero-kanban { display: flex; gap: 10px; padding-bottom: 5px; overflow-x: hidden; }
 .columna {
-  flex: 1; min-width: 200px; background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; display: flex; flex-direction: column;
+  flex: 1 1 0; min-width: 0; /* Regla de oro para evitar scroll horizontal */
+  background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; display: flex; flex-direction: column;
 }
 .columna h3 {
-  font-size: 13px; text-transform: uppercase; text-align: center; padding: 15px; margin: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #a1a1aa;
+  font-size: 11px; text-transform: uppercase; text-align: center; padding: 12px; margin: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #a1a1aa; font-weight: 600;
 }
-.zona-drop { flex-grow: 1; padding: 10px; min-height: 250px; transition: background 0.3s ease; }
+.zona-drop { flex-grow: 1; padding: 8px; min-height: 200px; transition: background 0.3s ease; }
 .zona-drop.drag-over { background: rgba(139, 92, 246, 0.15); border-radius: 0 0 12px 12px; }
 
-/* Tarjetas */
+/* Tarjetas Clicables */
 .tarjeta {
   background: rgba(30, 30, 46, 0.95); border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px;
-  cursor: grab; transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 8px; padding: 10px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;
+  cursor: pointer; /* Cambiado a pointer para indicar que es un botón */
+  transition: transform 0.2s, box-shadow 0.2s;
 }
-.tarjeta:active { cursor: grabbing; transform: scale(0.95); }
-.tarjeta:hover { border-color: #8b5cf6; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); }
-.tarjeta .icono { font-size: 24px; }
-.tarjeta .info { display: flex; flex-direction: column; }
-.tarjeta .info strong { font-size: 13px; color: #f8fafc; }
-.tarjeta .info small { font-size: 11px; color: #8b949e; margin-top: 3px; }
-.tarjeta.dragging { opacity: 0.5; }
+.tarjeta:hover { border-color: #8b5cf6; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); transform: translateY(-2px); }
+.tarjeta:active { transform: scale(0.95); }
+.tarjeta.dragging { opacity: 0.5; cursor: grabbing; transform: scale(0.95); box-shadow: none; }
+.tarjeta .icono { font-size: 20px; pointer-events: none; }
+.tarjeta .info { display: flex; flex-direction: column; pointer-events: none; overflow: hidden; }
+.tarjeta .info strong { font-size: 12px; color: #f8fafc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tarjeta .info small { font-size: 10px; color: #8b949e; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 
 /* --- Tabla --- */
 table {
@@ -167,3 +180,53 @@ tr:hover td { background: rgba(255, 255, 255, 0.05); }
 /* Filtros Grid */
 .grupo-filtros { display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; }
 .filtro-campo { flex: 1; min-width: 130px; display: flex; flex-direction: column; }
+
+/* --- LEYOUT PRINCIPAL (Pantalla Dividida) --- */
+.app-body-layout { display: grid; grid-template-columns: 1fr 350px; gap: 25px; align-items: start; }
+.app-main-content { min-width: 0; }
+
+/* --- SIDEBAR HISTORIAL (Feed en Vivo) --- */
+.sidebar-historial {
+  position: sticky; top: 20px; height: calc(100vh - 120px);
+  display: flex; flex-direction: column; padding: 25px; overflow: hidden;
+}
+.sidebar-historial h3 {
+  margin-top: 0; color: #ffffff; font-size: 16px; font-weight: 600;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 15px; margin-bottom: 15px;
+}
+
+.filtros-timeline { display: flex; gap: 8px; margin-bottom: 25px; flex-wrap: wrap; }
+.btn-pill {
+  background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #a1a1aa; padding: 6px 12px; border-radius: 20px; cursor: pointer;
+  font-size: 11px; font-weight: 600; transition: all 0.2s; font-family: inherit;
+}
+.btn-pill:hover { background: rgba(139, 92, 246, 0.2); color: #ffffff; }
+.btn-pill.activa { background: #8b5cf6; color: #ffffff; border-color: #8b5cf6; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3); }
+
+.timeline-container { flex-grow: 1; overflow-y: auto; padding-right: 10px; }
+.timeline-container::-webkit-scrollbar { width: 4px; }
+.timeline-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+.timeline { position: relative; padding-left: 20px; display: flex; flex-direction: column; gap: 20px; }
+.timeline::before { content: ''; position: absolute; top: 0; left: 6px; height: 100%; width: 2px; background: rgba(255, 255, 255, 0.1); }
+.timeline-item { position: relative; animation: fadeIn 0.4s ease; }
+.timeline-dot {
+  position: absolute; left: -20px; top: 4px; width: 14px; height: 14px;
+  border-radius: 50%; border: 3px solid #1e1e2e; transform: translateX(-50%);
+}
+.timeline-content {
+  background: rgba(0, 0, 0, 0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.tl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.tl-fecha { font-size: 10px; color: #8b949e; font-weight: 600; }
+.tl-usuario { font-size: 10px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #cbd5e1; }
+.tl-texto { font-size: 13px; color: #f8fafc; line-height: 1.4; margin: 0; }
+.tl-equipo { font-weight: bold; color: #8b5cf6; }
+
+.dot-creado { background: #3b82f6; } 
+.dot-disponible { background: #10b981; } 
+.dot-reparacion { background: #f59e0b; } 
+.dot-roto { background: #ef4444; } 
+.dot-asignado { background: #a855f7; } 
+.dot-formatear { background: #6366f1; }

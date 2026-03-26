@@ -11,10 +11,20 @@
     <div class="modal-box">
         <h2>🔑 Iniciar Sesión</h2>
         <form id="form-login">
-            <div class="campo" style="margin-bottom: 15px;"><label>Usuario</label><input type="text" id="login-user" required></div>
-            <div class="campo" style="margin-bottom: 25px;"><label>Contraseña</label><input type="password" id="login-pass" required></div>
+            <div class="campo" style="margin-bottom: 15px;"><label>Usuario</label><input type="text" id="login-user" placeholder="Ej: admin o tecnico1" required></div>
+            <div class="campo" style="margin-bottom: 25px;"><label>Contraseña</label><input type="password" id="login-pass" placeholder="Introduce tu contraseña" required></div>
             <div class="acciones"><button type="submit" class="btn-primario" style="width: 100%;">Entrar</button></div>
         </form>
+    </div>
+</div>
+
+<div id="modal-custom-dialog" class="overlay" style="display: none;">
+    <div class="modal-box" style="max-width: 400px; text-align: center;">
+        <div id="dialog-icon" style="font-size: 40px; margin-bottom: 15px;"></div>
+        <h2 id="dialog-title" style="font-size: 18px; margin-bottom: 10px;"></h2>
+        <p id="dialog-message" style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px; line-height: 1.5;"></p>
+        <input type="text" id="dialog-input" style="display: none; width: 100%; padding: 12px; margin-bottom: 25px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white;" placeholder="Escribe aquí...">
+        <div class="acciones" id="dialog-actions" style="justify-content: center;"></div>
     </div>
 </div>
 
@@ -36,32 +46,49 @@
         <a href="Registros.html" class="xp-tab active">Tabla de Registros</a>
     </div>
 
-    <div class="app-content">
-        <section class="contenedor-glass">
-            <div class="grupo-filtros">
-                <div class="filtro-campo"><label>Categoría:</label><select id="filtro_categoria"><option value="">-- Todas --</option></select></div>
-                <div class="filtro-campo"><label>Marca:</label><select id="filtro_marca"><option value="">-- Todas --</option></select></div>
-                <div class="filtro-campo"><label>Modelo:</label><select id="filtro_modelo"><option value="">-- Todos --</option></select></div>
-                <div class="filtro-campo"><label>Buscar (ID/Serie):</label><input type="text" id="filtro_texto" placeholder="Escribe aquí..."></div>
-                <div class="filtro-campo" style="flex: 0.5;"><button class="btn-secundario" onclick="limpiarFiltros()">Limpiar</button></div>
-            </div>
-        </section>
+    <div class="app-body-layout">
+        
+        <div class="app-main-content">
+            <section class="contenedor-glass">
+                <div class="grupo-filtros">
+                    <div class="filtro-campo"><label>Categoría:</label><select id="filtro_categoria"><option value="">-- Todas --</option></select></div>
+                    <div class="filtro-campo"><label>Marca:</label><select id="filtro_marca"><option value="">-- Todas --</option></select></div>
+                    <div class="filtro-campo"><label>Modelo:</label><select id="filtro_modelo"><option value="">-- Todos --</option></select></div>
+                    <div class="filtro-campo"><label>Buscar (ID/Serie):</label><input type="text" id="filtro_texto" placeholder="Escribe aquí..."></div>
+                    <div class="filtro-campo" style="flex: 0.5;"><button class="btn-secundario" onclick="limpiarFiltros()">Limpiar</button></div>
+                </div>
+            </section>
 
-        <section>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 30px; text-align: center;"><input type="checkbox" id="seleccionarTodos" onclick="marcarTodos(this)"></th>
-                        <th>ID</th><th>Categoría</th><th>Marca</th><th>Modelo</th>
-                        <th>Nº Serie</th><th>Técnico</th><th>Est. Físico</th><th>Est. Lógico</th><th>Asignado A</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaRegistros"></tbody>
-            </table>
-            <div class="acciones" style="margin-top: 20px;">
-                <button class="btn-primario" style="background: #ef4444;" onclick="borrarSeleccionados()">🗑️ Borrar seleccionados</button>
+            <section>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 30px; text-align: center;"><input type="checkbox" id="seleccionarTodos" onclick="marcarTodos(this)"></th>
+                            <th>ID</th><th>Categoría</th><th>Marca</th><th>Modelo</th>
+                            <th>Nº Serie</th><th>Técnico</th><th>Est. Físico</th><th>Est. Lógico</th><th>Asignado A</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaRegistros"></tbody>
+                </table>
+                <div class="acciones" style="margin-top: 20px;">
+                    <button id="btn-borrar-seleccionados" class="btn-peligro" onclick="borrarSeleccionados()">🗑️ Borrar seleccionados</button>
+                </div>
+            </section>
+        </div>
+
+        <aside class="sidebar-historial contenedor-glass">
+            <h3>⏱️ Actividad Reciente</h3>
+            <div class="filtros-timeline">
+                <button class="btn-pill activa" onclick="filtrarHistorial('hoy', this)">Hoy</button>
+                <button class="btn-pill" onclick="filtrarHistorial('semana', this)">Esta Semana</button>
+                <button class="btn-pill" onclick="filtrarHistorial('mes', this)">Este Mes</button>
+                <button class="btn-pill" onclick="filtrarHistorial('todo', this)">Todo</button>
             </div>
-        </section>
+            <div class="timeline-container">
+                <div class="timeline" id="timeline-feed"></div>
+            </div>
+        </aside>
+
     </div>
 </div>
 

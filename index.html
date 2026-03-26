@@ -7,32 +7,13 @@
 </head>
 <body>
 
-<!-- 🔽 FILTRO POR ESTADO AÑADIDO -->
-<select id="filtro-estado" 
-style="position:fixed; top:80px; right:20px; z-index:9999; padding:8px; border-radius:6px;">
-    <option value="todos">Mostrar todos</option>
-    <option value="Para Formatear">Para Formatear</option>
-    <option value="Disponible">Disponible</option>
-    <option value="Asignado">Asignado</option>
-    <option value="En Reparación">En Reparación</option>
-    <option value="Roto">Roto</option>
-</select>
-
 <div id="pantalla-login" class="overlay">
     <div class="modal-box">
         <h2>🔑 Iniciar Sesión</h2>
         <form id="form-login">
-            <div class="campo" style="margin-bottom: 15px;">
-                <label>Usuario</label>
-                <input type="text" id="login-user" required>
-            </div>
-            <div class="campo" style="margin-bottom: 25px;">
-                <label>Contraseña</label>
-                <input type="password" id="login-pass" required>
-            </div>
-            <div class="acciones">
-                <button type="submit" class="btn-primario" style="width: 100%;">Entrar al Sistema</button>
-            </div>
+            <div class="campo" style="margin-bottom: 15px;"><label>Usuario</label><input type="text" id="login-user" placeholder="Ej: admin o tecnico1" required></div>
+            <div class="campo" style="margin-bottom: 25px;"><label>Contraseña</label><input type="password" id="login-pass" placeholder="Introduce tu contraseña" required></div>
+            <div class="acciones"><button type="submit" class="btn-primario" style="width: 100%;">Entrar al Sistema</button></div>
         </form>
     </div>
 </div>
@@ -41,20 +22,32 @@ style="position:fixed; top:80px; right:20px; z-index:9999; padding:8px; border-r
     <div class="modal-box">
         <h2>Añadir Técnico</h2>
         <form id="form-nuevo-tecnico">
-            <div class="grupo"><div class="campo"><label>Nombre</label><input type="text" id="nt_nombre" required></div></div>
+            <div class="grupo"><div class="campo"><label>Nombre</label><input type="text" id="nt_nombre" placeholder="Ej: Carlos" required></div></div>
             <div class="grupo">
-                <div class="campo"><label>Primer Apellido</label><input type="text" id="nt_ape1" required></div>
-                <div class="campo"><label>Segundo Apellido</label><input type="text" id="nt_ape2" required></div>
+                <div class="campo"><label>Primer Apellido</label><input type="text" id="nt_ape1" placeholder="Ej: Martínez" required></div>
+                <div class="campo"><label>Segundo Apellido</label><input type="text" id="nt_ape2" placeholder="Ej: López" required></div>
             </div>
             <div class="grupo">
-                <div class="campo"><label>Usuario (Login)</label><input type="text" id="nt_user" required></div>
-                <div class="campo"><label>Contraseña</label><input type="password" id="nt_pass" required></div>
+                <div class="campo"><label>Usuario (Login)</label><input type="text" id="nt_user" placeholder="Ej: cmartinez" required></div>
+                <div class="campo"><label>Contraseña</label><input type="password" id="nt_pass" placeholder="Crea contraseña segura" required></div>
             </div>
             <div class="acciones">
                 <button type="button" class="btn-secundario" onclick="cerrarModalTecnico()">Cancelar</button>
                 <button type="submit" class="btn-primario">Guardar</button>
             </div>
         </form>
+    </div>
+</div>
+
+<div id="modal-custom-dialog" class="overlay" style="display: none;">
+    <div class="modal-box" style="max-width: 400px; text-align: center;">
+        <div id="dialog-icon" style="font-size: 40px; margin-bottom: 15px;"></div>
+        <h2 id="dialog-title" style="font-size: 18px; margin-bottom: 10px;"></h2>
+        <p id="dialog-message" style="font-size: 14px; color: #cbd5e1; margin-bottom: 20px; line-height: 1.5;"></p>
+        
+        <input type="text" id="dialog-input" style="display: none; width: 100%; padding: 12px; margin-bottom: 25px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white;" placeholder="Escribe aquí...">
+        
+        <div class="acciones" id="dialog-actions" style="justify-content: center;"></div>
     </div>
 </div>
 
@@ -67,9 +60,7 @@ style="position:fixed; top:80px; right:20px; z-index:9999; padding:8px; border-r
                 <span id="nombre-usuario-display">Cargando...</span>
                 <span class="flecha-abajo">▼</span>
             </button>
-            <div id="dropdown-usuario">
-                <button onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
-            </div>
+            <div id="dropdown-usuario"><button onclick="cerrarSesion()">🚪 Cerrar Sesión</button></div>
         </div>
     </header>
 
@@ -78,127 +69,88 @@ style="position:fixed; top:80px; right:20px; z-index:9999; padding:8px; border-r
         <a href="Registros.html" class="xp-tab">Tabla de Registros</a>
     </div>
 
-    <div class="app-content">
-        <section class="contenedor-glass">
-            <h3 style="margin-top:0; color: white;">Añadir Nuevo Dispositivo</h3>
-            <form id="formulario">
-                <div class="grupo">
-                    <div class="campo"><label>Categoría</label><select id="tipo" required></select></div>
-                    <div class="campo"><label>Marca</label><select id="marca" required></select></div>
-                </div>
-                <div class="grupo">
-                    <div class="campo"><label>Modelo</label><select id="modelo" required></select></div>
-                    <div class="campo"><label>Número de Serie</label><input type="text" id="serie" required></div>
-                </div>
-                <div class="grupo">
-                    <div class="campo">
-                        <label>Técnico <button type="button" id="btn-añadir-tecnico" onclick="abrirModalTecnico()" style="display:none; margin-left:10px; padding:2px 8px; font-size:10px; background:#8b5cf6; color:white; border:none; border-radius:4px; cursor:pointer;">+ Nuevo</button></label>
-                        <input type="text" id="tecnico" list="lista_tecnicos_dl" required autocomplete="off">
-                        <datalist id="lista_tecnicos_dl"></datalist>
+    <div class="app-body-layout">
+        <div class="app-main-content">
+            <section class="contenedor-glass">
+                <h3 style="margin-top:0; color: white;">Añadir Nuevo Dispositivo</h3>
+                <form id="formulario">
+                    <div class="grupo">
+                        <div class="campo"><label>Categoría</label><select id="tipo" required></select></div>
+                        <div class="campo"><label>Marca</label><select id="marca" required></select></div>
                     </div>
-                    <div class="campo">
-                        <label>Estado Físico</label>
-                        <select id="estado_fisico" required>
-                            <option value="Para Formatear">Para Formatear</option>
-                            <option value="Disponible">Disponible</option>
-                            <option value="Asignado">Asignado</option>
-                            <option value="En Reparación">En Reparación</option>
-                            <option value="Roto">Roto</option>
-                        </select>
+                    <div class="grupo">
+                        <div class="campo"><label>Modelo</label><select id="modelo" required></select></div>
+                        <div class="campo"><label>Número de Serie</label><input type="text" id="serie" placeholder="Ej: SN-987654321" required></div>
                     </div>
-                </div>
-                <div class="grupo">
-                    <div class="campo">
-                        <label>Estado Lógico</label>
-                        <select id="estado_logico" required>
-                            <option value="Activo">Activo</option>
-                            <option value="Inactivo">Inactivo</option>
-                        </select>
+                    <div class="grupo">
+                        <div class="campo">
+                            <label>Técnico <button type="button" id="btn-añadir-tecnico" onclick="abrirModalTecnico()" style="display:none; margin-left:10px; padding:2px 8px; font-size:10px; background:#8b5cf6; color:white; border:none; border-radius:4px; cursor:pointer;">+ Nuevo</button></label>
+                            <input type="text" id="tecnico" list="lista_tecnicos_dl" placeholder="Busca o escribe el técnico (Opcional)" autocomplete="off">
+                            <datalist id="lista_tecnicos_dl"></datalist>
+                        </div>
+                        <div class="campo">
+                            <label>Estado Físico</label>
+                            <select id="estado_fisico" required>
+                                <option value="Para Formatear">Para Formatear</option>
+                                <option value="Disponible">Disponible</option>
+                                <option value="Asignado">Asignado</option>
+                                <option value="En Reparación">En Reparación</option>
+                                <option value="Roto">Roto</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="campo">
-                        <label>Dueño Final (Opcional)</label>
-                        <input type="text" id="asignado" list="lista_asignados_dl" autocomplete="off">
-                        <datalist id="lista_asignados_dl"></datalist>
+                    <div class="grupo">
+                        <div class="campo"><label>Estado Lógico</label>
+                            <select id="estado_logico" required><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select>
+                        </div>
+                        <div class="campo"><label>Dueño Final (Opcional)</label>
+                            <input type="text" id="asignado" list="lista_asignados_dl" placeholder="Ej: Despacho Dirección" autocomplete="off"><datalist id="lista_asignados_dl"></datalist>
+                        </div>
                     </div>
-                </div>
-                <div class="acciones"><button type="submit" class="btn-primario">Guardar Equipo</button></div>
-            </form>
-        </section>
+                    <div class="acciones"><button type="submit" class="btn-primario">Guardar Equipo</button></div>
+                </form>
+            </section>
 
-        <section style="margin-top: 40px;">
-            <h2 style="color: white; margin-bottom: 20px;">Gestión de Almacén (Mueve los equipos)</h2>
-            <div class="tablero-kanban">
-                <div class="columna" id="Para Formatear"><h3>Para Formatear</h3><div class="zona-drop"></div></div>
-                <div class="columna" id="Disponible"><h3>Disponible</h3><div class="zona-drop"></div></div>
-                <div class="columna" id="Asignado"><h3>Asignado</h3><div class="zona-drop"></div></div>
-                <div class="columna" id="En Reparación"><h3>En Reparación</h3><div class="zona-drop"></div></div>
-                <div class="columna" id="Roto"><h3>Roto</h3><div class="zona-drop"></div></div>
+            <section style="margin-top: 40px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color: white; margin: 0;">Gestión de Almacén</h2>
+                    <select id="filtro-estado" class="btn-secundario" style="width: auto; padding: 8px 15px; font-weight: normal; font-size: 13px;">
+                        <option value="todos">👁️ Mostrar todas las columnas</option>
+                        <option value="Para Formatear">Para Formatear</option>
+                        <option value="Disponible">Disponible</option>
+                        <option value="Asignado">Asignado</option>
+                        <option value="En Reparación">En Reparación</option>
+                        <option value="Roto">Roto</option>
+                    </select>
+                </div>
+                
+                <div class="tablero-kanban">
+                    <div class="columna" id="Para Formatear"><h3>Para Formatear</h3><div class="zona-drop"></div></div>
+                    <div class="columna" id="Disponible"><h3>Disponible</h3><div class="zona-drop"></div></div>
+                    <div class="columna" id="Asignado"><h3>Asignado</h3><div class="zona-drop"></div></div>
+                    <div class="columna" id="En Reparación"><h3>En Reparación</h3><div class="zona-drop"></div></div>
+                    <div class="columna" id="Roto"><h3>Roto</h3><div class="zona-drop"></div></div>
+                </div>
+            </section>
+        </div>
+
+        <aside class="sidebar-historial contenedor-glass">
+            <h3>⏱️ Actividad Reciente</h3>
+            <div class="filtros-timeline">
+                <button class="btn-pill activa" onclick="filtrarHistorial('hoy', this)">Hoy</button>
+                <button class="btn-pill" onclick="filtrarHistorial('semana', this)">Esta Semana</button>
+                <button class="btn-pill" onclick="filtrarHistorial('mes', this)">Este Mes</button>
+                <button class="btn-pill" onclick="filtrarHistorial('todo', this)">Todo</button>
             </div>
-        </section>
+            <div class="timeline-container">
+                <div class="timeline" id="timeline-feed"></div>
+            </div>
+        </aside>
+
     </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
 <script src="index.js"></script>
-
-<!-- 🔥 FUNCIONES AÑADIDAS -->
-<script>
-
-// FILTRO POR ESTADO
-document.getElementById("filtro-estado").addEventListener("change", function() {
-
-    const estado = this.value;
-
-    document.querySelectorAll(".columna").forEach(col => {
-        col.style.display = (estado === "todos" || col.id === estado) ? "" : "none";
-    });
-
-});
-
-
-// OBSERVADOR DE CAMBIOS EN KANBAN
-document.querySelectorAll(".zona-drop").forEach(zona => {
-
-    new MutationObserver(() => gestionarAsignado())
-    .observe(zona, { childList: true });
-
-});
-
-function gestionarAsignado() {
-
-    document.querySelectorAll(".tarjeta").forEach(t => {
-
-        const columna = t.closest(".columna")?.id;
-
-        let div = t.querySelector(".asignado-extra");
-
-        if (!div) {
-            div = document.createElement("div");
-            div.className = "asignado-extra";
-            t.appendChild(div);
-        }
-
-        if (columna === "Asignado") {
-
-            if (!t.dataset.asignadoNombre) {
-                const nombre = prompt("¿A quién se asigna este dispositivo?");
-                if (nombre) t.dataset.asignadoNombre = nombre;
-            }
-
-            if (t.dataset.asignadoNombre) {
-                div.innerHTML = "<b>Asignado a:</b> " + t.dataset.asignadoNombre;
-            }
-
-        } else {
-            t.dataset.asignadoNombre = "";
-            div.innerHTML = "";
-        }
-
-    });
-
-}
-
-</script>
-
 </body>
 </html>

@@ -7,6 +7,17 @@
 </head>
 <body>
 
+<!-- 🔽 FILTRO POR ESTADO AÑADIDO -->
+<select id="filtro-estado" 
+style="position:fixed; top:80px; right:20px; z-index:9999; padding:8px; border-radius:6px;">
+    <option value="todos">Mostrar todos</option>
+    <option value="Para Formatear">Para Formatear</option>
+    <option value="Disponible">Disponible</option>
+    <option value="Asignado">Asignado</option>
+    <option value="En Reparación">En Reparación</option>
+    <option value="Roto">Roto</option>
+</select>
+
 <div id="pantalla-login" class="overlay">
     <div class="modal-box">
         <h2>🔑 Iniciar Sesión</h2>
@@ -129,5 +140,65 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
 <script src="index.js"></script>
+
+<!-- 🔥 FUNCIONES AÑADIDAS -->
+<script>
+
+// FILTRO POR ESTADO
+document.getElementById("filtro-estado").addEventListener("change", function() {
+
+    const estado = this.value;
+
+    document.querySelectorAll(".columna").forEach(col => {
+        col.style.display = (estado === "todos" || col.id === estado) ? "" : "none";
+    });
+
+});
+
+
+// OBSERVADOR DE CAMBIOS EN KANBAN
+document.querySelectorAll(".zona-drop").forEach(zona => {
+
+    new MutationObserver(() => gestionarAsignado())
+    .observe(zona, { childList: true });
+
+});
+
+function gestionarAsignado() {
+
+    document.querySelectorAll(".tarjeta").forEach(t => {
+
+        const columna = t.closest(".columna")?.id;
+
+        let div = t.querySelector(".asignado-extra");
+
+        if (!div) {
+            div = document.createElement("div");
+            div.className = "asignado-extra";
+            t.appendChild(div);
+        }
+
+        if (columna === "Asignado") {
+
+            if (!t.dataset.asignadoNombre) {
+                const nombre = prompt("¿A quién se asigna este dispositivo?");
+                if (nombre) t.dataset.asignadoNombre = nombre;
+            }
+
+            if (t.dataset.asignadoNombre) {
+                div.innerHTML = "<b>Asignado a:</b> " + t.dataset.asignadoNombre;
+            }
+
+        } else {
+            t.dataset.asignadoNombre = "";
+            div.innerHTML = "";
+        }
+
+    });
+
+}
+
+</script>
+
 </body>
 </html>

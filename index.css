@@ -1,9 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
+/* 🔥 FIX GLOBAL: Evita que los inputs se salgan de sus contenedores al tener padding */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 /* --- Fondo General (Auroras) --- */
 body {
   font-family: 'Inter', sans-serif;
-  margin: 0; padding: 40px 20px; min-height: 100vh; box-sizing: border-box;
+  margin: 0; padding: 40px 20px; min-height: 100vh;
   color: #e2e8f0; display: flex; justify-content: center; align-items: flex-start;
   background-color: #0c0d16;
   background-image: 
@@ -96,11 +101,26 @@ body {
 .campo { flex: 1; display: flex; flex-direction: column; }
 label { font-size: 12px; font-weight: 500; color: #a1a1aa; margin-bottom: 8px; text-transform: uppercase; }
 
+/* 🔥 FIX DE LOS INPUTS Y CAJAS DESPLEGABLES */
 input, select {
   width: 100%; padding: 12px 16px; background: rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: #f8fafc;
   font-family: inherit; font-size: 14px; transition: all 0.3s;
 }
+
+/* 🔥 Elimina el "botón" feo del navegador en las listas desplegables */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+select::-ms-expand { display: none; } /* Oculta flecha en Edge e IE antiguos */
+
 input:focus, select:focus {
   outline: none; background: rgba(0, 0, 0, 0.4); border-color: #8b5cf6;
   box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
@@ -141,7 +161,7 @@ button.btn-secundario:hover { background: rgba(255, 255, 255, 0.2); }
 }
 #btn-borrar-seleccionados.activo:hover { background: #dc2626; transform: translateY(-2px); }
 
-/* --- Mini Dashboard (NUEVO) --- */
+/* --- Mini Dashboard --- */
 .mini-dashboard {
   display: flex; gap: 15px; margin-bottom: 20px;
 }
@@ -158,9 +178,9 @@ button.btn-secundario:hover { background: rgba(255, 255, 255, 0.2); }
 .dash-card.roto p { color: #f87171; }
 
 /* --- Tablero Kanban --- */
-.tablero-kanban { display: flex; gap: 10px; padding-bottom: 5px; overflow-x: hidden; }
+.tablero-kanban { display: flex; gap: 12px; padding-bottom: 10px; overflow-x: auto; }
 .columna {
-  flex: 1 1 0; min-width: 0; 
+  flex: 1; min-width: 150px; 
   background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; display: flex; flex-direction: column;
 }
 .columna h3 {

@@ -11,9 +11,9 @@
     <div class="modal-box">
         <h2>🔑 Iniciar Sesión</h2>
         <form id="form-login">
-            <div class="campo" style="margin-bottom: 15px;"><label>Usuario</label><input type="text" id="login-user" placeholder="Ej: admin o tecnico1" required></div>
+            <div class="campo" style="margin-bottom: 15px;"><label>Usuario</label><input type="text" id="login-user" placeholder="Ej: admin" required></div>
             <div class="campo" style="margin-bottom: 25px;"><label>Contraseña</label><input type="password" id="login-pass" placeholder="Introduce tu contraseña" required></div>
-            <div class="acciones"><button type="submit" class="btn-primario" style="width: 100%;">Entrar al Sistema</button></div>
+            <div class="acciones"><button type="submit" class="btn-primario" style="width: 100%;" id="btn-login-submit">Entrar al Sistema</button></div>
         </form>
     </div>
 </div>
@@ -33,7 +33,7 @@
             </div>
             <div class="acciones">
                 <button type="button" class="btn-secundario" onclick="cerrarModalTecnico()">Cancelar</button>
-                <button type="submit" class="btn-primario">Guardar</button>
+                <button type="submit" class="btn-primario">Guardar en Base de Datos</button>
             </div>
         </form>
     </div>
@@ -113,7 +113,7 @@
             </div>
             <div class="acciones">
                 <button type="button" class="btn-secundario" onclick="document.getElementById('modal-editar').style.display='none'">Cancelar</button>
-                <button type="submit" class="btn-primario">💾 Guardar Cambios</button>
+                <button type="submit" class="btn-primario">💾 Guardar Servidor</button>
             </div>
         </form>
     </div>
@@ -121,7 +121,7 @@
 
 <div class="app-window">
     <header class="app-header">
-        <div class="app-title">📦 Control de Inventario</div>
+        <div class="app-title">📦 Control de Inventario API</div>
         <div style="position: relative;">
             <button id="btn-usuario" class="btn-perfil">
                 <span class="icono-perfil">👤</span>
@@ -174,7 +174,7 @@
                             <input type="text" id="asignado" list="lista_asignados_dl" placeholder="Ej: Despacho Dirección" autocomplete="off"><datalist id="lista_asignados_dl"></datalist>
                         </div>
                     </div>
-                    <div class="acciones"><button type="submit" class="btn-primario">Guardar Equipo</button></div>
+                    <div class="acciones"><button type="submit" class="btn-primario" id="btn-guardar-equipo">Guardar Equipo</button></div>
                 </form>
             </section>
 
@@ -192,24 +192,25 @@
                 </div>
                 
                 <div class="mini-dashboard" id="dashboard-stats">
-                    <div class="dash-card"><h3>Total Local</h3><p id="dash-total">0</p></div>
-                    <div class="dash-card disp"><h3>Disponibles</h3><p id="dash-disp">0</p></div>
-                    <div class="dash-card rep"><h3>En Reparación</h3><p id="dash-rep">0</p></div>
-                    <div class="dash-card roto"><h3>Rotos</h3><p id="dash-roto">0</p></div>
+                    <div class="dash-card"><h3>Total Base de Datos</h3><p id="dash-total">0</p></div>
+                    <div class="dash-card" style="border-color: rgba(99, 102, 241, 0.3);"><h3 style="color: #818cf8;">Para Formatear</h3><p id="dash-formatear" style="color: white;">0</p></div>
+                    <div class="dash-card disp"><h3 style="color: #34d399;">Disponibles</h3><p id="dash-disp">0</p></div>
+                    <div class="dash-card rep"><h3 style="color: #fbbf24;">En Reparación</h3><p id="dash-rep">0</p></div>
+                    <div class="dash-card roto"><h3 style="color: #f87171;">Rotos</h3><p id="dash-roto">0</p></div>
                 </div>
                 
                 <div class="tablero-kanban">
-                    <div class="columna" id="Para Formatear"><h3>Para Formatear</h3><div class="zona-drop"></div></div>
-                    <div class="columna" id="Disponible"><h3>Disponible</h3><div class="zona-drop"></div></div>
-                    <div class="columna" id="Asignado"><h3>Asignado</h3><div class="zona-drop"></div></div>
-                    <div class="columna" id="En Reparación"><h3>En Reparación</h3><div class="zona-drop"></div></div>
-                    <div class="columna" id="Roto"><h3>Roto</h3><div class="zona-drop"></div></div>
+                    <div class="columna" data-estado="Para Formatear"><h3>Para Formatear</h3><div class="zona-drop"></div></div>
+                    <div class="columna" data-estado="Disponible"><h3>Disponible</h3><div class="zona-drop"></div></div>
+                    <div class="columna" data-estado="Asignado"><h3>Asignado</h3><div class="zona-drop"></div></div>
+                    <div class="columna" data-estado="En Reparación"><h3>En Reparación</h3><div class="zona-drop"></div></div>
+                    <div class="columna" data-estado="Roto"><h3>Roto</h3><div class="zona-drop"></div></div>
                 </div>
             </section>
         </div>
 
         <aside class="sidebar-historial contenedor-glass">
-            <h3>⏱️ Actividad Reciente</h3>
+            <h3>⏱️ Actividad del Servidor</h3>
             <div class="filtros-timeline">
                 <button class="btn-pill activa" onclick="filtrarHistorial('hoy', this)">Hoy</button>
                 <button class="btn-pill" onclick="filtrarHistorial('semana', this)">Esta Semana</button>
@@ -224,7 +225,6 @@
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
 <script src="index.js"></script>
 </body>
 </html>

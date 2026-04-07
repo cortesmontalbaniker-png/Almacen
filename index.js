@@ -1,38 +1,111 @@
-// --- 0. SISTEMA DE USUARIOS Y AUTENTICACIÓN ---
+// =====================================================================
+// 🚀 ARQUITECTURA DE PRODUCCIÓN (CLIENTE - SERVIDOR)
+// =====================================================================
+
+const API_SERVER = {
+    login: async function(usuario, password) {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema")) || [];
+                const encontrado = usuariosDB.find(user => user.user === usuario && user.pass === password);
+
+                if (encontrado) {
+                    resolve({ success: true, token: "jwt-token-simulado-" + Date.now(), user: encontrado });
+                } else {
+                    resolve({ success: false, message: "Usuario o contraseña incorrectos" });
+                }
+            }, 300); 
+        });
+    },
+
+    crearTecnico: async function(datosTecnico) {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema")) || [];
+                if (usuariosDB.find(u => u.user === datosTecnico.user)) {
+                    resolve({ success: false, message: "El usuario ya existe" });
+                } else {
+                    usuariosDB.push(datosTecnico);
+                    localStorage.setItem("usuarios_sistema", JSON.stringify(usuariosDB));
+                    resolve({ success: true });
+                }
+            }, 300);
+        });
+    },
+
+    getTecnicos: async function() {
+        return new Promise(resolve => {
+            let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema")) || [];
+            resolve(usuariosDB.map(u => u.nombreFormateado));
+        });
+    },
+
+    getEquipos: async function() {
+        let temporales = JSON.parse(localStorage.getItem("db_simulada_equipos")) || [];
+        return new Promise(resolve => resolve(temporales));
+    },
+
+    guardarEquipo: async function(equipo) {
+        return new Promise(resolve => {
+            let temporales = JSON.parse(localStorage.getItem("db_simulada_equipos")) || [];
+            
+            if(equipo.id_interno) {
+                const idx = temporales.findIndex(t => t.id_interno === equipo.id_interno);
+                if(idx > -1) temporales[idx] = equipo;
+            } else {
+                let maxId = 0;
+                if (temporales.length > 0) maxId = Math.max(...temporales.map(t => parseInt(t.id_interno) || 0));
+                equipo.id_interno = maxId + 1; 
+                temporales.push(equipo);
+            }
+            
+            localStorage.setItem("db_simulada_equipos", JSON.stringify(temporales));
+            resolve({ success: true, id_interno: equipo.id_interno });
+        });
+    },
+
+    borrarEquipos: async function(idsArray) {
+        return new Promise(resolve => {
+            let temporales = JSON.parse(localStorage.getItem("db_simulada_equipos")) || [];
+            temporales = temporales.filter(reg => !idsArray.includes(reg.id_interno));
+            localStorage.setItem("db_simulada_equipos", JSON.stringify(temporales));
+            resolve({ success: true });
+        });
+    },
+
+    guardarEvento: async function(evento) {
+        let historial = JSON.parse(localStorage.getItem("db_simulada_historial")) || [];
+        historial.unshift(evento);
+        localStorage.setItem("db_simulada_historial", JSON.stringify(historial));
+        return Promise.resolve();
+    },
+    
+    getHistorial: async function() {
+        return Promise.resolve(JSON.parse(localStorage.getItem("db_simulada_historial")) || []);
+    }
+};
+
+// =====================================================================
+// FUNCIONES GLOBALES (Modales, Navegación y Eventos)
+// =====================================================================
+
 const usuariosPorDefecto = [
     { user: "admin", pass: "admin123", nombreFormateado: "Administrador del Sistema", rol: "admin" },
     { user: "tecnico1", pass: "1234", nombreFormateado: "Pérez Gómez, Juan", rol: "tecnico" }
 ];
-
 if (!localStorage.getItem("usuarios_sistema")) {
     localStorage.setItem("usuarios_sistema", JSON.stringify(usuariosPorDefecto));
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    const btnUsuario = document.getElementById('btn-usuario');
-    const dropdownUsuario = document.getElementById('dropdown-usuario');
-    if (btnUsuario && dropdownUsuario) {
-        btnUsuario.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdownUsuario.classList.toggle('mostrar');
-        });
-        document.addEventListener('click', (e) => {
-            if (!dropdownUsuario.contains(e.target)) dropdownUsuario.classList.remove('mostrar');
-        });
-    }
+function cerrarSesion() {
+    sessionStorage.removeItem("usuarioLogueado");
+    sessionStorage.removeItem("jwt_token");
+    location.reload();
+}
 
-    const filtroEstado = document.getElementById("filtro-estado");
-    if (filtroEstado) {
-        filtroEstado.addEventListener("change", function() {
-            const estado = this.value;
-            document.querySelectorAll(".tablero-kanban .columna").forEach(col => {
-                col.style.display = (estado === "todos" || col.id === estado) ? "flex" : "none";
-            });
-        });
-    }
-});
+function abrirModalTecnico() { document.getElementById("modal-tecnico").style.display = "flex"; }
+function cerrarModalTecnico() { document.getElementById("modal-tecnico").style.display = "none"; document.getElementById("form-nuevo-tecnico").reset(); }
 
-// --- FUNCIONES PARA DIÁLOGOS CUSTOM ---
 function cerrarDialogoCustom() {
     const modal = document.getElementById("modal-custom-dialog");
     if(modal) modal.style.display = "none";
@@ -48,54 +121,34 @@ function mostrarDialogoCustom(config) {
 
     if(!modal || !icon || !title || !message || !actions) return;
 
-    icon.innerHTML = config.iconHTML || "ℹ️";
-    icon.className = config.iconClass || ""; 
-    title.textContent = config.title || "";
-    message.textContent = config.message || "";
+    icon.innerHTML = config.iconHTML || "ℹ️"; icon.className = config.iconClass || ""; 
+    title.textContent = config.title || ""; message.textContent = config.message || "";
     actions.innerHTML = ""; 
 
     if (inputContainer) {
-        if (config.tipo === 'prompt') {
-            inputContainer.style.display = "block";
-            inputContainer.value = ""; 
-        } else {
-            inputContainer.style.display = "none";
-        }
+        if (config.tipo === 'prompt') { inputContainer.style.display = "block"; inputContainer.value = ""; } 
+        else { inputContainer.style.display = "none"; }
     }
 
     if (config.tipo === 'alerta') {
-        const btnOk = document.createElement("button");
-        btnOk.className = "btn-primario";
-        btnOk.textContent = "Aceptar";
+        const btnOk = document.createElement("button"); btnOk.className = "btn-primario"; btnOk.textContent = "Aceptar";
         btnOk.onclick = () => { cerrarDialogoCustom(); if(config.onAccept) config.onAccept(); };
         actions.appendChild(btnOk);
     } else if (config.tipo === 'confirmacion' || config.tipo === 'prompt') {
-        const btnCancel = document.createElement("button");
-        btnCancel.className = "btn-secundario";
-        btnCancel.textContent = config.textCancel || "Cancelar";
+        const btnCancel = document.createElement("button"); btnCancel.className = "btn-secundario"; btnCancel.textContent = config.textCancel || "Cancelar";
         btnCancel.onclick = () => { cerrarDialogoCustom(); if(config.onCancel) config.onCancel(); };
         actions.appendChild(btnCancel);
 
-        const btnAccept = document.createElement("button");
-        btnAccept.className = config.isDanger ? "btn-peligro" : "btn-primario";
+        const btnAccept = document.createElement("button"); btnAccept.className = config.isDanger ? "btn-peligro" : "btn-primario";
         btnAccept.textContent = config.textAccept || "Confirmar";
         btnAccept.onclick = () => { 
             cerrarDialogoCustom(); 
-            if(config.onAccept) {
-                if(config.tipo === 'prompt') {
-                    config.onAccept(inputContainer ? inputContainer.value : "");
-                } else {
-                    config.onAccept(); 
-                }
-            }
+            if(config.onAccept) { config.tipo === 'prompt' ? config.onAccept(inputContainer ? inputContainer.value : "") : config.onAccept(); }
         };
         actions.appendChild(btnAccept);
     }
-
     modal.style.display = "flex";
-    if (config.tipo === 'prompt' && inputContainer) {
-        setTimeout(() => inputContainer.focus(), 50);
-    }
+    if (config.tipo === 'prompt' && inputContainer) setTimeout(() => inputContainer.focus(), 50);
 }
 
 function mostrarAlertaCustom(mensaje, tipo, titulo) {
@@ -122,47 +175,22 @@ function mostrarPromptCustom(mensaje, onAccept, onCancel, titulo) {
     });
 }
 
-// --- LOGIN Y SEGURIDAD ---
-const formLogin = document.getElementById("form-login");
-if (formLogin) {
-    formLogin.addEventListener("submit", function(e) {
-        e.preventDefault();
-        const u = document.getElementById("login-user").value.trim();
-        const p = document.getElementById("login-pass").value.trim();
-        const usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema"));
-
-        const encontrado = usuariosDB.find(user => user.user === u && user.pass === p);
-        if (encontrado) {
-            sessionStorage.setItem("usuarioLogueado", JSON.stringify(encontrado));
-            location.reload(); 
-        } else {
-            mostrarAlertaCustom("❌ Usuario o contraseña incorrectos.", "error");
-        }
-    });
-}
-
-function cerrarSesion() {
-    sessionStorage.removeItem("usuarioLogueado");
-    location.reload();
-}
-
-function cargarListaTecnicosAdmin(nombreAdmin) {
+async function cargarListaTecnicosAdmin(nombreAdmin) {
     const selectTecnico = document.getElementById("tecnico");
     if (!selectTecnico) return;
     
-    let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema")) || [];
-    let otrosNombres = usuariosDB.map(u => u.nombreFormateado).filter(n => n !== nombreAdmin);
+    const todosLosTecnicos = await API_SERVER.getTecnicos();
+    let otrosNombres = todosLosTecnicos.filter(n => n !== nombreAdmin);
     
     selectTecnico.innerHTML = `<option value="${nombreAdmin}">${nombreAdmin} (Tú)</option><option value="">-- Sin asignar --</option>`;
-    
-    otrosNombres.forEach(nombre => {
-        selectTecnico.innerHTML += `<option value="${nombre}">${nombre}</option>`;
-    });
+    otrosNombres.forEach(nombre => selectTecnico.innerHTML += `<option value="${nombre}">${nombre}</option>`);
 }
 
-function verificarSeguridad() {
+async function verificarSeguridad() {
+    const token = sessionStorage.getItem("jwt_token");
     const usuarioActualJSON = sessionStorage.getItem("usuarioLogueado");
-    if (!usuarioActualJSON) {
+    
+    if (!token || !usuarioActualJSON) {
         document.getElementById("pantalla-login").style.display = "flex";
         return false;
     } else {
@@ -185,107 +213,59 @@ function verificarSeguridad() {
                 inputTecnico.disabled = false;
                 inputTecnico.style.opacity = "1";
                 if (btnNuevoTecnico) btnNuevoTecnico.style.display = "inline-block";
-                cargarListaTecnicosAdmin(usuario.nombreFormateado);
+                await cargarListaTecnicosAdmin(usuario.nombreFormateado);
             }
         }
         return true;
     }
 }
 
-const formNuevoTecnico = document.getElementById("form-nuevo-tecnico");
-if (formNuevoTecnico) {
-    formNuevoTecnico.addEventListener("submit", function(e) {
-        e.preventDefault();
-        const nombre = document.getElementById("nt_nombre").value.trim();
-        const ape1 = document.getElementById("nt_ape1").value.trim();
-        const ape2 = document.getElementById("nt_ape2").value.trim();
-        const user = document.getElementById("nt_user").value.trim();
-        const pass = document.getElementById("nt_pass").value.trim();
-        const formatoOficial = `${ape1} ${ape2}, ${nombre}`;
-
-        let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema"));
-        if (usuariosDB.find(u => u.user === user)) {
-            mostrarAlertaCustom("⚠️ Este nombre de usuario ya existe.", "warning"); return;
-        }
-
-        usuariosDB.push({ user, pass, nombreFormateado: formatoOficial, rol: "tecnico" });
-        localStorage.setItem("usuarios_sistema", JSON.stringify(usuariosDB));
-
-        mostrarAlertaCustom(`✅ Técnico añadido: ${formatoOficial}`, "success");
-        cerrarModalTecnico();
-        verificarSeguridad();
-    });
-}
-
-function abrirModalTecnico() { document.getElementById("modal-tecnico").style.display = "flex"; }
-function cerrarModalTecnico() { document.getElementById("modal-tecnico").style.display = "none"; document.getElementById("form-nuevo-tecnico").reset(); }
-
-// --- 1. BASE DE DATOS Y ARRANQUE ---
-let db;
-async function conectarDB() {
-    if (!verificarSeguridad()) return; 
-
-    try {
-        const SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}` });
-        const respuesta = await fetch("almacen.db");
-        const buffer = await respuesta.arrayBuffer();
-        db = new SQL.Database(new Uint8Array(buffer));
-        arrancarApp();
-    } catch (e) {
-        console.log("No se pudo cargar .db. Usando memoria local.");
-        arrancarApp();
-    }
-}
-
-function arrancarApp() {
-    inicializarDesplegablesInteligentes();
-    mostrarTodoTabla();
-    actualizarDashboard();
+async function arrancarApp() {
+    await inicializarDesplegablesInteligentes();
+    await mostrarTodoTabla();
+    await actualizarDashboard();
+    
     if(document.querySelector('.tablero-kanban')) {
-        renderizarKanban();
+        await renderizarKanban();
         inicializarDragAndDrop();
     }
-    renderizarHistorial('hoy');
+    await renderizarHistorial('hoy');
+
+    const seriePendiente = sessionStorage.getItem('ver_detalle_serie');
+    if(seriePendiente && document.getElementById("filtro_serie")) {
+        document.getElementById("filtro_serie").value = seriePendiente;
+        filtrarTabla();
+        sessionStorage.removeItem('ver_detalle_serie'); 
+    }
 }
 
-// --- 🔥 MINI-DASHBOARD ---
-function actualizarDashboard() {
+async function actualizarDashboard() {
     const dTotal = document.getElementById("dash-total");
+    const dFormatear = document.getElementById("dash-formatear");
     const dDisp = document.getElementById("dash-disp");
     const dRep = document.getElementById("dash-rep");
     const dRoto = document.getElementById("dash-roto");
     
     if(!dTotal) return;
 
-    let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
+    const baseDeDatos = await API_SERVER.getEquipos();
     
-    let disponibles = temporales.filter(t => t.estado_f === "Disponible").length;
-    let enReparacion = temporales.filter(t => t.estado_f === "En Reparación").length;
-    let rotos = temporales.filter(t => t.estado_f === "Roto").length;
-
-    dTotal.textContent = temporales.length;
-    dDisp.textContent = disponibles;
-    dRep.textContent = enReparacion;
-    dRoto.textContent = rotos;
+    dTotal.textContent = baseDeDatos.length;
+    if(dFormatear) dFormatear.textContent = baseDeDatos.filter(t => t.estado_f === "Para Formatear").length;
+    if(dDisp) dDisp.textContent = baseDeDatos.filter(t => t.estado_f === "Disponible").length;
+    if(dRep) dRep.textContent = baseDeDatos.filter(t => t.estado_f === "En Reparación").length;
+    if(dRoto) dRoto.textContent = baseDeDatos.filter(t => t.estado_f === "Roto").length;
 }
 
-// --- 2. LISTAS INTELIGENTES Y EDICIÓN ---
-function inicializarDesplegablesInteligentes() {
+async function inicializarDesplegablesInteligentes() {
     let categorias = new Set(["Portátil", "Monitor", "Cascos", "PC"]);
     let marcas = new Set(["HP", "Dell", "Lenovo"]);
     let modelos = new Set();
     let asignados = new Set();
     
-    let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema")) || [];
-    let tecnicosOficiales = usuariosDB.map(u => u.nombreFormateado);
-
-    if (db) {
-        const res = db.exec("SELECT Nombre_modelo FROM Inventario");
-        if (res.length > 0) { res[0].values.forEach(fila => { if(fila[0]) modelos.add(fila[0]); }); }
-    }
-
-    let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
-    temporales.forEach(reg => {
+    const baseDeDatos = await API_SERVER.getEquipos();
+    
+    baseDeDatos.forEach(reg => {
         if(reg.tipo) categorias.add(reg.tipo);
         if(reg.marca) marcas.add(reg.marca);
         if(reg.modelo) modelos.add(reg.modelo);
@@ -305,24 +285,22 @@ function inicializarDesplegablesInteligentes() {
         configurarDesplegableDinámico("edit_modelo", "lista_modelos", Array.from(modelos));
         
         const selTec = document.getElementById("edit_tecnico");
+        const tecnicos = await API_SERVER.getTecnicos();
         selTec.innerHTML = '<option value="">-- Sin asignar --</option>';
-        tecnicosOficiales.forEach(t => selTec.innerHTML += `<option value="${t}">${t}</option>`);
+        tecnicos.forEach(t => selTec.innerHTML += `<option value="${t}">${t}</option>`);
     }
 
     if (document.getElementById("filtro_categoria")) {
         llenarFiltroNormal("filtro_categoria", Array.from(categorias));
         llenarFiltroNormal("filtro_marca", Array.from(marcas));
         llenarFiltroNormal("filtro_modelo", Array.from(modelos));
-        document.getElementById("filtro_texto").addEventListener("input", filtrarTabla);
     }
 }
 
 function configurarDatalist(idDatalist, storageKey, datosExtraidos) {
     const datalist = document.getElementById(idDatalist);
     if (!datalist) return;
-    let opcionesGuardadas = JSON.parse(localStorage.getItem(storageKey)) || [];
-    let opcionesFinales = [...new Set([...datosExtraidos, ...opcionesGuardadas])];
-    localStorage.setItem(storageKey, JSON.stringify(opcionesFinales));
+    let opcionesFinales = [...new Set([...datosExtraidos])];
     datalist.innerHTML = "";
     opcionesFinales.forEach(opt => { if (opt.trim() !== "") datalist.innerHTML += `<option value="${opt}">`; });
 }
@@ -330,12 +308,8 @@ function configurarDatalist(idDatalist, storageKey, datosExtraidos) {
 function llenarFiltroNormal(idSelect, opciones) {
     const select = document.getElementById(idSelect);
     if (!select) return;
-    const storageKey = idSelect.replace("filtro_", "lista_") + "s";
-    let opcionesGuardadas = JSON.parse(localStorage.getItem(storageKey)) || [];
-    let opcionesFinales = [...new Set([...opciones, ...opcionesGuardadas])];
     select.innerHTML = `<option value="">-- Todas --</option>`;
-    opcionesFinales.forEach(opt => { select.innerHTML += `<option value="${opt}">${opt}</option>`; });
-    select.addEventListener("change", filtrarTabla);
+    opciones.forEach(opt => { select.innerHTML += `<option value="${opt}">${opt}</option>`; });
 }
 
 function configurarDesplegableDinámico(idSelect, storageKey, datosExtraidos) {
@@ -356,7 +330,7 @@ function configurarDesplegableDinámico(idSelect, storageKey, datosExtraidos) {
     let valorAnterior = select.value;
     select.addEventListener("change", function() {
         if (this.value === "OTRO_NUEVO") {
-            mostrarPromptCustom("Introduce el nuevo valor para añadirlo a la lista:", (nuevoValor) => {
+            mostrarPromptCustom("Introduce el nuevo valor para guardarlo en el sistema:", (nuevoValor) => {
                 if (nuevoValor && nuevoValor.trim() !== "") {
                     const valorLimpio = nuevoValor.trim();
                     if (!opcionesFinales.includes(valorLimpio)) {
@@ -366,51 +340,34 @@ function configurarDesplegableDinámico(idSelect, storageKey, datosExtraidos) {
                     }
                     select.value = valorLimpio;
                     valorAnterior = valorLimpio;
-                } else {
-                    select.value = valorAnterior;
-                }
-            }, () => {
-                select.value = valorAnterior;
-            }, "Añadir Opción");
-        } else { 
-            valorAnterior = this.value; 
-        }
+                } else { select.value = valorAnterior; }
+            }, () => { select.value = valorAnterior; }, "Añadir Opción");
+        } else { valorAnterior = this.value; }
     });
 }
 
-// --- 3. HISTORIAL DE ACTIVIDAD (TIMELINE) ---
-function registrarEvento(id_equipo, accion, estado, tipo_color) {
-    let historial = JSON.parse(localStorage.getItem("historial_eventos")) || [];
+async function registrarEvento(id_equipo, accion, estado, tipo_color) {
     const usuarioActual = JSON.parse(sessionStorage.getItem("usuarioLogueado"));
-    const nombrePersona = usuarioActual ? usuarioActual.nombreFormateado : "Sistema";
-
     const nuevoEvento = {
-        id_evento: Date.now(),
         fecha: new Date().toISOString(),
-        usuario: nombrePersona,
-        equipo: id_equipo,
-        accion: accion,
-        estado: estado,
-        color: tipo_color
+        usuario: usuarioActual ? usuarioActual.nombreFormateado : "Sistema",
+        equipo: id_equipo, accion: accion, estado: estado, color: tipo_color
     };
-
-    historial.unshift(nuevoEvento); 
-    localStorage.setItem("historial_eventos", JSON.stringify(historial));
+    await API_SERVER.guardarEvento(nuevoEvento);
     renderizarHistorial('hoy'); 
 }
 
-function renderizarHistorial(filtro) {
+async function renderizarHistorial(filtro) {
     const feed = document.getElementById("timeline-feed");
     if(!feed) return;
-    
     feed.innerHTML = "";
-    let historial = JSON.parse(localStorage.getItem("historial_eventos")) || [];
+    
+    const historial = await API_SERVER.getHistorial();
     const ahora = new Date();
 
     let filtrados = historial.filter(evento => {
         const fechaObj = new Date(evento.fecha);
         const diasDiferencia = (ahora - fechaObj) / (1000 * 60 * 60 * 24);
-        
         if (filtro === 'hoy') return diasDiferencia < 1;
         if (filtro === 'semana') return diasDiferencia <= 7;
         if (filtro === 'mes') return diasDiferencia <= 30;
@@ -418,7 +375,7 @@ function renderizarHistorial(filtro) {
     });
 
     if(filtrados.length === 0) {
-        feed.innerHTML = `<p style="color:#8b949e; font-size:12px; text-align:center; padding:20px;">No hay actividad en este periodo.</p>`;
+        feed.innerHTML = `<p style="color:#8b949e; font-size:12px; text-align:center; padding:20px;">No hay actividad en el servidor.</p>`;
         return;
     }
 
@@ -428,10 +385,10 @@ function renderizarHistorial(filtro) {
         
         let claseColor = "dot-creado";
         if(evento.color === "Disponible") claseColor = "dot-disponible";
-        if(evento.color === "En Reparación") claseColor = "dot-reparacion";
-        if(evento.color === "Roto" || evento.color === "Borrado") claseColor = "dot-roto";
-        if(evento.color === "Asignado") claseColor = "dot-asignado";
-        if(evento.color === "Para Formatear") claseColor = "dot-formatear";
+        else if(evento.color === "En Reparación") claseColor = "dot-reparacion";
+        else if(evento.color === "Roto" || evento.color === "Borrado") claseColor = "dot-roto";
+        else if(evento.color === "Asignado") claseColor = "dot-asignado";
+        else if(evento.color === "Para Formatear") claseColor = "dot-formatear";
 
         feed.innerHTML += `
             <div class="timeline-item">
@@ -441,12 +398,9 @@ function renderizarHistorial(filtro) {
                         <span class="tl-fecha">${fechaFormato}</span>
                         <span class="tl-usuario">👤 ${evento.usuario.split(',')[0]}</span>
                     </div>
-                    <p class="tl-texto">
-                        Equipo <span class="tl-equipo">#${evento.equipo}</span> ${evento.accion} <strong>${evento.estado}</strong>
-                    </p>
+                    <p class="tl-texto">Equipo <span class="tl-equipo">#${evento.equipo}</span> ${evento.accion} <strong>${evento.estado}</strong></p>
                 </div>
-            </div>
-        `;
+            </div>`;
     });
 }
 
@@ -456,50 +410,11 @@ function filtrarHistorial(tipo, btnClicado) {
     renderizarHistorial(tipo);
 }
 
-// --- 4. GUARDAR FORMULARIO ---
-const formulario = document.getElementById("formulario");
-if (formulario) {
-    formulario.addEventListener("submit", function(e) {
-        e.preventDefault();
-        let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
-        let nuevoIdInterno = temporales.length > 0 ? temporales[temporales.length - 1].id_interno + 1 : 1;
-
-        const estadoFisico = document.getElementById("estado_fisico").value;
-
-        const nuevoEquipo = {
-            id_interno: nuevoIdInterno,
-            tipo: document.getElementById("tipo").value,
-            marca: document.getElementById("marca").value,
-            modelo: document.getElementById("modelo").value,
-            serie: document.getElementById("serie").value,
-            tecnico: document.getElementById("tecnico").value, 
-            estado_f: estadoFisico,
-            estado_l: document.getElementById("estado_logico").value,
-            asignado: document.getElementById("asignado").value.trim()
-        };
-
-        temporales.push(nuevoEquipo);
-        localStorage.setItem("mis_registros", JSON.stringify(temporales));
-        
-        registrarEvento(nuevoIdInterno, "registrado por primera vez como", estadoFisico, estadoFisico);
-
-        mostrarAlertaCustom(`✅ Dispositivo registrado. ID Interno: ${nuevoIdInterno}`, "success");
-        this.reset();
-        
-        verificarSeguridad(); 
-        arrancarApp(); 
-        
-        const inputSerie = document.getElementById("serie");
-        if(inputSerie) inputSerie.focus();
-    });
-}
-
-// --- 5. SISTEMA MODAL DE DETALLES Y EDICIÓN (RESTRINGIDA) ---
 let idEdicionActual = null;
 
-function mostrarDetalles(id_interno) {
-    let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
-    const item = temporales.find(i => i.id_interno === id_interno);
+async function mostrarDetalles(id_interno) {
+    const baseDeDatos = await API_SERVER.getEquipos();
+    const item = baseDeDatos.find(i => i.id_interno === id_interno);
     if (!item) return;
 
     idEdicionActual = id_interno;
@@ -526,33 +441,27 @@ function mostrarDetalles(id_interno) {
     else if (item.estado_f === "Asignado") { colorFondo = "rgba(168, 85, 247, 0.2)"; colorTexto = "#d8b4fe"; colorBorde = "rgba(168, 85, 247, 0.3)"; }
     else { colorFondo = "rgba(99, 102, 241, 0.2)"; colorTexto = "#a5b4fc"; colorBorde = "rgba(99, 102, 241, 0.3)"; }
 
-    spanEstado.style.background = colorFondo;
-    spanEstado.style.color = colorTexto;
-    spanEstado.style.border = `1px solid ${colorBorde}`;
+    spanEstado.style.background = colorFondo; spanEstado.style.color = colorTexto; spanEstado.style.border = `1px solid ${colorBorde}`;
 
-    // 🔥 BLOQUEO DE BOTÓN DE EDICIÓN PARA TÉCNICOS AJENOS
-    const usuarioActualJSON = sessionStorage.getItem("usuarioLogueado");
-    const usuarioLogueado = usuarioActualJSON ? JSON.parse(usuarioActualJSON) : null;
+    const usuarioLogueado = JSON.parse(sessionStorage.getItem("usuarioLogueado"));
     const btnEditar = document.getElementById("btn-abrir-editar");
 
     if (btnEditar) {
         if (usuarioLogueado && usuarioLogueado.rol !== "admin" && item.tecnico !== usuarioLogueado.nombreFormateado) {
-            btnEditar.style.display = "none"; // El técnico no es el creador, ocultamos botón
+            btnEditar.style.display = "none"; 
         } else {
-            btnEditar.style.display = "block"; // Eres el creador o eres admin, puedes editar
+            btnEditar.style.display = "block"; 
         }
     }
-
     document.getElementById("modal-detalles").style.display = "flex";
 }
 
 function cerrarModalDetalles() { document.getElementById("modal-detalles").style.display = "none"; }
 
-function abrirModalEditar() {
+async function abrirModalEditar() {
     cerrarModalDetalles();
-    
-    let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
-    const item = temporales.find(i => i.id_interno === idEdicionActual);
+    const baseDeDatos = await API_SERVER.getEquipos();
+    const item = baseDeDatos.find(i => i.id_interno === idEdicionActual);
     if (!item) return;
 
     document.getElementById("edit_id").value = item.id_interno;
@@ -568,87 +477,56 @@ function abrirModalEditar() {
     document.getElementById("modal-editar").style.display = "flex";
 }
 
-const formEditar = document.getElementById("form-editar");
-if (formEditar) {
-    formEditar.addEventListener("submit", function(e) {
-        e.preventDefault();
-        let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
-        const id_interno = parseInt(document.getElementById("edit_id").value);
-        const index = temporales.findIndex(i => i.id_interno === id_interno);
-
-        if(index > -1) {
-            temporales[index].tipo = document.getElementById("edit_tipo").value;
-            temporales[index].marca = document.getElementById("edit_marca").value;
-            temporales[index].modelo = document.getElementById("edit_modelo").value;
-            temporales[index].serie = document.getElementById("edit_serie").value;
-            temporales[index].tecnico = document.getElementById("edit_tecnico").value;
-            temporales[index].estado_f = document.getElementById("edit_estado_fisico").value;
-            temporales[index].estado_l = document.getElementById("edit_estado_logico").value;
-            temporales[index].asignado = document.getElementById("edit_asignado").value.trim();
-
-            localStorage.setItem("mis_registros", JSON.stringify(temporales));
-            registrarEvento(id_interno, "editó los datos del equipo", temporales[index].estado_f, temporales[index].estado_f);
-            
-            document.getElementById("modal-editar").style.display = "none";
-            mostrarAlertaCustom(`✅ Equipo #${id_interno} actualizado.`, "success");
-            arrancarApp();
-        }
-    });
-}
-
 function inicializarDragAndDrop() {
     const zonasDrop = document.querySelectorAll('.zona-drop');
     zonasDrop.forEach(zona => {
         zona.addEventListener('dragover', e => { e.preventDefault(); zona.classList.add('drag-over'); });
         zona.addEventListener('dragleave', () => zona.classList.remove('drag-over'));
-        zona.addEventListener('drop', e => {
+        zona.addEventListener('drop', async e => {
             e.preventDefault();
             zona.classList.remove('drag-over');
             
-            const idItemStr = e.dataTransfer.getData('text/plain');
-            const nuevoEstado = zona.parentElement.id; 
+            const idItemStr = parseInt(e.dataTransfer.getData('text/plain'));
+            const nuevoEstado = zona.closest('.columna').getAttribute("data-estado"); 
 
-            let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
-            const itemIndex = temporales.findIndex(i => i.id_interno.toString() === idItemStr);
+            const baseDeDatos = await API_SERVER.getEquipos();
+            const itemIndex = baseDeDatos.findIndex(i => i.id_interno === idItemStr);
             
-            if(itemIndex > -1 && temporales[itemIndex].estado_f !== nuevoEstado) {
-                const viejoEstado = temporales[itemIndex].estado_f;
+            if(itemIndex > -1 && baseDeDatos[itemIndex].estado_f !== nuevoEstado) {
+                const equipo = baseDeDatos[itemIndex];
+                const viejoEstado = equipo.estado_f;
                 
-                // 🔥 BLOQUEO DE ARRASTRE PARA TÉCNICOS AJENOS
-                const usuarioActualJSON = sessionStorage.getItem("usuarioLogueado");
-                const usuarioLogueado = usuarioActualJSON ? JSON.parse(usuarioActualJSON) : null;
+                const usuarioLogueado = JSON.parse(sessionStorage.getItem("usuarioLogueado"));
 
-                if (usuarioLogueado && usuarioLogueado.rol !== "admin" && temporales[itemIndex].tecnico !== usuarioLogueado.nombreFormateado) {
-                    mostrarAlertaCustom("❌ No tienes permiso para mover este equipo (registrado por otro técnico).", "error");
-                    renderizarKanban(); // Devolvemos la tarjeta a su sitio visualmente
+                if (usuarioLogueado && usuarioLogueado.rol !== "admin" && equipo.tecnico !== usuarioLogueado.nombreFormateado) {
+                    mostrarAlertaCustom("❌ Denegado por el servidor: No puedes mover equipos de otros.", "error");
+                    renderizarKanban(); 
                     return;
                 }
 
                 if (nuevoEstado === "Asignado") {
                     mostrarPromptCustom("¿A quién se asigna este dispositivo?", (nombre) => {
                         if (nombre && nombre.trim() !== "") {
-                            mostrarConfirmacionCustom(`¿Asignar este equipo (#${idItemStr}) a ${nombre.trim()}?`, () => {
-                                temporales[itemIndex].estado_f = nuevoEstado;
-                                temporales[itemIndex].asignado = nombre.trim();
-                                localStorage.setItem("mis_registros", JSON.stringify(temporales));
+                            mostrarConfirmacionCustom(`¿Asignar a ${nombre.trim()}?`, async () => {
+                                equipo.estado_f = nuevoEstado;
+                                equipo.asignado = nombre.trim();
+                                await API_SERVER.guardarEquipo(equipo);
+                                await registrarEvento(equipo.id_interno, "asignado a", nombre.trim(), nuevoEstado);
                                 arrancarApp(); 
-                                registrarEvento(idItemStr, "asignado a", nombre.trim(), nuevoEstado);
                             }, () => { arrancarApp(); });
                         } else {
-                            mostrarAlertaCustom("❌ Debes indicar un nombre para asignarlo.", "error");
+                            mostrarAlertaCustom("❌ Faltan datos obligatorios.", "error");
                             arrancarApp(); 
                         }
-                    }, () => { 
-                        arrancarApp(); 
-                    }, "Asignar Dispositivo");
+                    }, () => { arrancarApp(); }, "Sincronizar Asignación");
                     
                 } else {
-                    mostrarConfirmacionCustom(`¿Mover equipo #${idItemStr} a ${nuevoEstado}?`, () => {
-                        temporales[itemIndex].estado_f = nuevoEstado;
-                        temporales[itemIndex].asignado = "";
-                        localStorage.setItem("mis_registros", JSON.stringify(temporales));
+                    mostrarConfirmacionCustom(`¿Trasladar a ${nuevoEstado}?`, async () => {
+                        equipo.estado_f = nuevoEstado;
+                        equipo.asignado = "";
+                        await API_SERVER.guardarEquipo(equipo);
+                        await registrarEvento(equipo.id_interno, "trasladado a", nuevoEstado, nuevoEstado);
                         arrancarApp(); 
-                        registrarEvento(idItemStr, "movido de " + viejoEstado + " a", nuevoEstado, nuevoEstado);
                     }, () => { arrancarApp(); });
                 }
             }
@@ -656,17 +534,17 @@ function inicializarDragAndDrop() {
     });
 }
 
-function renderizarKanban() {
+async function renderizarKanban() {
     document.querySelectorAll('.zona-drop').forEach(zona => zona.innerHTML = '');
-    let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
+    const baseDeDatos = await API_SERVER.getEquipos();
     const iconos = { "PC": "🖥️", "Portátil": "💻", "Cascos": "🎧", "Monitor": "📺" };
     
-    temporales.forEach(item => {
+    baseDeDatos.forEach(item => {
         const tarjeta = document.createElement('div');
         tarjeta.className = 'tarjeta';
         tarjeta.draggable = true;
         tarjeta.id = "tarjeta-" + item.id_interno;
-        tarjeta.title = "Haz clic para ver detalles del equipo";
+        tarjeta.title = "Ver detalles desde base de datos";
         
         let htmlAsignado = item.asignado ? `<div class="asignado-extra" style="font-size: 11px; margin-top: 6px; color: #a855f7; font-weight: bold;">👤 Asignado a: ${item.asignado}</div>` : '';
 
@@ -693,12 +571,10 @@ function renderizarKanban() {
         });
 
         tarjeta.addEventListener('click', () => {
-            if (!isDragging) {
-                mostrarDetalles(item.id_interno);
-            }
+            if (!isDragging) mostrarDetalles(item.id_interno);
         });
 
-        const columnaDestino = document.getElementById(item.estado_f);
+        const columnaDestino = document.querySelector(`.columna[data-estado="${item.estado_f}"]`);
         if(columnaDestino) {
             const zona = columnaDestino.querySelector('.zona-drop');
             if(zona) zona.appendChild(tarjeta);
@@ -706,30 +582,17 @@ function renderizarKanban() {
     });
 }
 
-// --- 6. TABLA Y RESTRICCIÓN DE BORRADO ---
-function mostrarTodoTabla() {
+async function mostrarTodoTabla() {
     const tabla = document.getElementById("tablaRegistros");
     if (!tabla) return;
     tabla.innerHTML = ""; 
     
-    const usuarioActualJSON = sessionStorage.getItem("usuarioLogueado");
-    const usuarioLogueado = usuarioActualJSON ? JSON.parse(usuarioActualJSON) : null;
-
+    const usuarioLogueado = JSON.parse(sessionStorage.getItem("usuarioLogueado"));
     const iconos = { "PC": "🖥️", "Portátil": "💻", "Cascos": "🎧", "Monitor": "📺" };
 
-    if (db) {
-        const res = db.exec("SELECT id_inventario, Nombre_modelo, numer_serie FROM Inventario");
-        if (res.length > 0) {
-            res[0].values.forEach(fila => {
-                tabla.innerHTML += `<tr><td style="text-align: center;"><input type="checkbox" disabled title="Base intocable"></td>
-                <td>DB-${fila[0]}</td><td>-</td><td>-</td><td>${fila[1]}</td><td>${fila[2] || 'S/N'}</td>
-                <td>-</td><td>-</td><td>-</td><td>-</td></tr>`;
-            });
-        }
-    }
+    const baseDeDatos = await API_SERVER.getEquipos();
 
-    let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
-    temporales.forEach(reg => {
+    baseDeDatos.forEach(reg => {
         let badgeClass = "badge-default";
         if (reg.estado_f === "Disponible") badgeClass = "badge-disponible";
         else if (reg.estado_f === "En Reparación") badgeClass = "badge-reparacion";
@@ -739,14 +602,10 @@ function mostrarTodoTabla() {
 
         let logicoClass = reg.estado_l === "Activo" ? "badge-activo" : "badge-inactivo";
         
-        let disableCheck = "";
-        let tituloCheck = "Seleccionar para borrar";
+        let disableCheck = ""; let tituloCheck = "Seleccionar para borrar";
         
-        if (usuarioLogueado && usuarioLogueado.rol !== "admin") {
-            if (reg.tecnico !== usuarioLogueado.nombreFormateado) {
-                disableCheck = "disabled";
-                tituloCheck = "Solo el creador o un Admin puede borrar este equipo";
-            }
+        if (usuarioLogueado && usuarioLogueado.rol !== "admin" && reg.tecnico !== usuarioLogueado.nombreFormateado) {
+            disableCheck = "disabled"; tituloCheck = "Bloqueado por el servidor";
         }
 
         tabla.innerHTML += `
@@ -767,53 +626,61 @@ function mostrarTodoTabla() {
     });
 }
 
+// 🔥 FILTRADO SIN BÚSQUEDA GLOBAL
 function filtrarTabla() {
-    const cat = document.getElementById("filtro_categoria").value.toLowerCase();
-    const mar = document.getElementById("filtro_marca").value.toLowerCase();
-    const mod = document.getElementById("filtro_modelo").value.toLowerCase();
-    const txt = document.getElementById("filtro_texto").value.toLowerCase();
+    const id = document.getElementById("filtro_id") ? document.getElementById("filtro_id").value.toLowerCase().trim() : "";
+    const cat = document.getElementById("filtro_categoria") ? document.getElementById("filtro_categoria").value.toLowerCase() : "";
+    const mar = document.getElementById("filtro_marca") ? document.getElementById("filtro_marca").value.toLowerCase() : "";
+    const mod = document.getElementById("filtro_modelo") ? document.getElementById("filtro_modelo").value.toLowerCase() : "";
+    const serie = document.getElementById("filtro_serie") ? document.getElementById("filtro_serie").value.toLowerCase().trim() : "";
+    const tec = document.getElementById("filtro_tecnico") ? document.getElementById("filtro_tecnico").value.toLowerCase() : "";
+    const estF = document.getElementById("filtro_estado_f") ? document.getElementById("filtro_estado_f").value.toLowerCase() : "";
+    const estL = document.getElementById("filtro_estado_l") ? document.getElementById("filtro_estado_l").value.toLowerCase() : "";
+    const asig = document.getElementById("filtro_asignado") ? document.getElementById("filtro_asignado").value.toLowerCase() : "";
+    
     const filas = document.querySelectorAll("#tablaRegistros tr");
 
     filas.forEach(fila => {
+        if(fila.cells.length < 10) return;
+        
         const c_id = fila.cells[1].innerText.toLowerCase();
         const c_cat = fila.cells[2].innerText.toLowerCase();
         const c_mar = fila.cells[3].innerText.toLowerCase();
         const c_mod = fila.cells[4].innerText.toLowerCase();
         const c_serie = fila.cells[5].innerText.toLowerCase();
+        const c_tec = fila.cells[6].innerText.toLowerCase();
+        const c_estF = fila.cells[7].innerText.toLowerCase();
+        const c_estL = fila.cells[8].innerText.toLowerCase();
+        const c_asig = fila.cells[9].innerText.toLowerCase();
 
-        const matchCat = cat === "" || c_cat === cat;
-        const matchMar = mar === "" || c_mar === mar;
-        const matchMod = mod === "" || c_mod === mod;
-        const matchTxt = txt === "" || c_id.includes(txt) || c_serie.includes(txt);
+        const matchId = id === "" || c_id.includes(id);
+        const matchCat = cat === "" || c_cat.includes(cat);
+        const matchMar = mar === "" || c_mar.includes(mar);
+        const matchMod = mod === "" || c_mod.includes(mod);
+        const matchSerie = serie === "" || c_serie.includes(serie);
+        const matchTec = tec === "" || c_tec.includes(tec); 
+        const matchEstF = estF === "" || c_estF.includes(estF);
+        const matchEstL = estL === "" || c_estL.includes(estL);
+        const matchAsig = asig === "" || c_asig.includes(asig);
 
-        fila.style.display = (matchCat && matchMar && matchMod && matchTxt) ? "" : "none";
+        fila.style.display = (matchId && matchCat && matchMar && matchMod && matchSerie && matchTec && matchEstF && matchEstL && matchAsig) ? "" : "none";
     });
 }
 
 function limpiarFiltros() {
-    document.getElementById("filtro_categoria").value = "";
-    document.getElementById("filtro_marca").value = "";
-    document.getElementById("filtro_modelo").value = "";
-    document.getElementById("filtro_texto").value = "";
+    const campos = ["filtro_id", "filtro_categoria", "filtro_marca", "filtro_modelo", "filtro_serie", "filtro_tecnico", "filtro_estado_f", "filtro_estado_l", "filtro_asignado"];
+    campos.forEach(c => { if(document.getElementById(c)) document.getElementById(c).value = ""; });
     filtrarTabla(); 
 }
-
-document.addEventListener('change', function(e) {
-    if(e.target.classList.contains('check-borrar') || e.target.id === 'seleccionarTodos') {
-        actualizarBotonBorrar();
-    }
-});
 
 function actualizarBotonBorrar() {
     const btn = document.getElementById('btn-borrar-seleccionados');
     if(!btn) return;
     const marcados = document.querySelectorAll('.check-borrar:checked').length;
     if(marcados > 0) {
-        btn.innerHTML = `🗑️ Borrar ${marcados} seleccionados`;
-        btn.classList.add('activo');
+        btn.innerHTML = `🗑️ Borrar ${marcados} seleccionados`; btn.classList.add('activo');
     } else {
-        btn.innerHTML = `🗑️ Borrar seleccionados`;
-        btn.classList.remove('activo');
+        btn.innerHTML = `🗑️ Borrar seleccionados`; btn.classList.remove('activo');
     }
 }
 
@@ -828,27 +695,24 @@ function borrarSeleccionados() {
     const checkboxes = document.querySelectorAll('.check-borrar:checked');
     if (checkboxes.length === 0) return; 
     
-    mostrarConfirmacionCustom(`¿Estás seguro de que quieres borrar de forma permanente ${checkboxes.length} equipo(s)?`, () => {
-        let temporales = JSON.parse(localStorage.getItem("mis_registros")) || [];
+    mostrarConfirmacionCustom(`¿Estás seguro de solicitar al servidor el borrado de ${checkboxes.length} equipo(s)?`, async () => {
         const ids = Array.from(checkboxes).map(cb => parseInt(cb.getAttribute('data-id')));
         
-        ids.forEach(id => { registrarEvento(id, "fue eliminado permanentemente", "Borrado", "Borrado"); });
-
-        temporales = temporales.filter(reg => !ids.includes(reg.id_interno));
-        localStorage.setItem("mis_registros", JSON.stringify(temporales));
+        const res = await API_SERVER.borrarEquipos(ids);
         
-        arrancarApp(); 
-        const checkTodos = document.getElementById('seleccionarTodos');
-        if(checkTodos) checkTodos.checked = false;
-        actualizarBotonBorrar();
-        
-        mostrarAlertaCustom("✅ Registros eliminados correctamente.", "success");
-    }, () => {}, "¿Borrar registros?", "Borrar permanentemente", true); 
+        if(res.success) {
+            ids.forEach(id => registrarEvento(id, "fue eliminado del servidor", "Borrado", "Borrado"));
+            arrancarApp(); 
+            const checkTodos = document.getElementById('seleccionarTodos');
+            if(checkTodos) checkTodos.checked = false;
+            actualizarBotonBorrar();
+            mostrarAlertaCustom("✅ Registros eliminados de la Base de Datos.", "success");
+        }
+    }, () => {}, "Petición Crítica", "Borrar del servidor", true); 
 }
 
-// --- 7. EXPORTAR A EXCEL (CSV) ---
 function exportarExcel() {
-    let csv = "ID Interno,Tipo,Marca,Modelo,N. Serie,Preparado por,Estado Fisico,Estado Logico,Asignado a\n";
+    let csv = "ID Interno;Tipo;Marca;Modelo;N. Serie;Preparado por;Estado Fisico;Estado Logico;Asignado a\n";
     const filas = document.querySelectorAll("#tablaRegistros tr");
     
     let exportados = 0;
@@ -857,25 +721,165 @@ function exportarExcel() {
             let cols = fila.querySelectorAll("td");
             if (cols.length > 1) { 
                 let rowData = [];
-                for(let i=1; i<cols.length; i++) { 
-                    rowData.push('"' + cols[i].innerText.replace(/"/g, '""').trim() + '"');
+                for(let i=1; i<cols.length; i++) {
+                    let textLimpio = cols[i].innerText.replace(/(\r\n|\n|\r)/gm, " ").replace(/"/g, '""').trim();
+                    rowData.push('"' + textLimpio + '"');
                 }
-                csv += rowData.join(",") + "\n";
+                csv += rowData.join(";") + "\n";
                 exportados++;
             }
         }
     });
 
-    if(exportados === 0) {
-        mostrarAlertaCustom("No hay registros para exportar con los filtros actuales.", "warning");
-        return;
-    }
+    if(exportados === 0) { mostrarAlertaCustom("No hay registros para exportar con los filtros actuales.", "warning"); return; }
 
     const blob = new Blob(["\uFEFF"+csv], { type: 'text/csv;charset=utf-8;' }); 
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "Inventario_Export_" + new Date().toLocaleDateString().replace(/\//g, '-') + ".csv";
+    link.download = "Inventario_API_Export_" + new Date().toLocaleDateString().replace(/\//g, '-') + ".csv";
     link.click();
 }
 
-conectarDB();
+// =====================================================================
+// 🎯 PROTECCIÓN DE CARGA (EL SEGURO CONTRA FALLOS DE EVENTOS)
+// =====================================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+    
+    const btnUsuario = document.getElementById('btn-usuario');
+    const dropdownUsuario = document.getElementById('dropdown-usuario');
+    if (btnUsuario && dropdownUsuario) {
+        btnUsuario.addEventListener('click', (e) => { e.stopPropagation(); dropdownUsuario.classList.toggle('mostrar'); });
+        document.addEventListener('click', (e) => { if (!dropdownUsuario.contains(e.target)) dropdownUsuario.classList.remove('mostrar'); });
+    }
+
+    const filtroEstado = document.getElementById("filtro-estado");
+    if (filtroEstado) {
+        filtroEstado.addEventListener("change", function() {
+            const estado = this.value;
+            document.querySelectorAll(".tablero-kanban .columna").forEach(col => {
+                col.style.display = (estado === "todos" || col.getAttribute("data-estado") === estado) ? "flex" : "none";
+            });
+        });
+    }
+
+    const formLogin = document.getElementById("form-login");
+    if (formLogin) {
+        formLogin.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const u = document.getElementById("login-user").value.trim();
+            const p = document.getElementById("login-pass").value.trim();
+            
+            const btnSubmit = document.getElementById("btn-login-submit") || formLogin.querySelector('button[type="submit"]');
+            
+            if(btnSubmit) {
+                btnSubmit.textContent = "Conectando al servidor...";
+                btnSubmit.disabled = true;
+            }
+
+            const respuestaServidor = await API_SERVER.login(u, p);
+            
+            if (respuestaServidor.success) {
+                sessionStorage.setItem("jwt_token", respuestaServidor.token);
+                sessionStorage.setItem("usuarioLogueado", JSON.stringify(respuestaServidor.user));
+                location.reload(); 
+            } else {
+                mostrarAlertaCustom(respuestaServidor.message || "Credenciales incorrectas.", "error");
+                if(btnSubmit) {
+                    btnSubmit.textContent = "Entrar al Sistema";
+                    btnSubmit.disabled = false;
+                }
+            }
+        });
+    }
+
+    const formNuevoTecnico = document.getElementById("form-nuevo-tecnico");
+    if (formNuevoTecnico) {
+        formNuevoTecnico.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const nombre = document.getElementById("nt_nombre").value.trim();
+            const ape1 = document.getElementById("nt_ape1").value.trim();
+            const ape2 = document.getElementById("nt_ape2").value.trim();
+            const user = document.getElementById("nt_user").value.trim();
+            const pass = document.getElementById("nt_pass").value.trim();
+            
+            const formatoOficial = `${ape1} ${ape2}, ${nombre}`;
+
+            const respuesta = await API_SERVER.crearTecnico({ user, pass, nombreFormateado: formatoOficial, rol: "tecnico" });
+
+            if(respuesta.success) {
+                mostrarAlertaCustom(`✅ Técnico registrado en la Base de Datos: ${formatoOficial}`, "success");
+                cerrarModalTecnico();
+                verificarSeguridad(); 
+            } else {
+                mostrarAlertaCustom("❌ Error: " + respuesta.message, "error");
+            }
+        });
+    }
+
+    const formulario = document.getElementById("formulario");
+    if (formulario) {
+        formulario.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            
+            const nuevoEquipo = {
+                tipo: document.getElementById("tipo").value,
+                marca: document.getElementById("marca").value,
+                modelo: document.getElementById("modelo").value,
+                serie: document.getElementById("serie").value,
+                tecnico: document.getElementById("tecnico").value, 
+                estado_f: document.getElementById("estado_fisico").value,
+                estado_l: document.getElementById("estado_logico").value,
+                asignado: document.getElementById("asignado").value.trim()
+            };
+
+            const res = await API_SERVER.guardarEquipo(nuevoEquipo);
+            
+            if (res.success) {
+                await registrarEvento(res.id_interno, "registrado en base de datos como", nuevoEquipo.estado_f, nuevoEquipo.estado_f);
+                mostrarAlertaCustom(`✅ Servidor: Dispositivo guardado correctamente.`, "success");
+                this.reset();
+                arrancarApp(); 
+                const inputSerie = document.getElementById("serie");
+                if(inputSerie) inputSerie.focus();
+            }
+        });
+    }
+
+    const formEditar = document.getElementById("form-editar");
+    if (formEditar) {
+        formEditar.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            
+            const equipoActualizado = {
+                id_interno: parseInt(document.getElementById("edit_id").value),
+                tipo: document.getElementById("edit_tipo").value,
+                marca: document.getElementById("edit_marca").value,
+                modelo: document.getElementById("edit_modelo").value,
+                serie: document.getElementById("edit_serie").value,
+                tecnico: document.getElementById("edit_tecnico").value,
+                estado_f: document.getElementById("edit_estado_fisico").value,
+                estado_l: document.getElementById("edit_estado_logico").value,
+                asignado: document.getElementById("edit_asignado").value.trim()
+            };
+
+            const res = await API_SERVER.guardarEquipo(equipoActualizado);
+            if(res.success) {
+                await registrarEvento(equipoActualizado.id_interno, "actualizado en el servidor", equipoActualizado.estado_f, equipoActualizado.estado_f);
+                document.getElementById("modal-editar").style.display = "none";
+                mostrarAlertaCustom(`✅ Sincronización exitosa.`, "success");
+                arrancarApp();
+            }
+        });
+    }
+
+    document.addEventListener('change', function(e) {
+        if(e.target.classList.contains('check-borrar') || e.target.id === 'seleccionarTodos') {
+            actualizarBotonBorrar();
+        }
+    });
+
+    verificarSeguridad().then(logueado => {
+        if(logueado) arrancarApp();
+    });
+});

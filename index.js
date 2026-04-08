@@ -1,87 +1,91 @@
 // =====================================================================
-// 🚀 ARQUITECTURA DE PRODUCCIÓN (CLIENTE - SERVIDOR)
+// 🚀 ARQUITECTURA DE PRODUCCIÓN (CLIENTE - SERVIDOR) - CONEXIÓN AL BACKEND
 // =====================================================================
+
+const API_BASE_URL = '/api'; // La API se sirve desde el mismo dominio
+
+const handleResponse = async (response) => {
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Error de red o respuesta no JSON' }));
+        mostrarAlertaCustom(`Error del servidor: ${error.message}`, 'error');
+        throw new Error(error.message);
+    }
+    return response.json();
+};
+
+const getAuthHeaders = () => {
+    const token = sessionStorage.getItem("jwt_token");
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+};
 
 const API_SERVER = {
     login: async function(usuario, password) {
-        return new Promise(resolve => {
-            setTimeout(() => {
-                let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema")) || [];
-                const encontrado = usuariosDB.find(user => user.user === usuario && user.pass === password);
-
-                if (encontrado) {
-                    resolve({ success: true, token: "jwt-token-simulado-" + Date.now(), user: encontrado });
-                } else {
-                    resolve({ success: false, message: "Usuario o contraseña incorrectos" });
-                }
-            }, 300); 
+        const response = await fetch(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user: usuario, pass: password })
         });
+        // No usamos handleResponse aquí porque necesitamos manejar el error 401 específicamente
+        return response.json();
     },
 
     crearTecnico: async function(datosTecnico) {
-        return new Promise(resolve => {
-            setTimeout(() => {
-                let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema")) || [];
-                if (usuariosDB.find(u => u.user === datosTecnico.user)) {
-                    resolve({ success: false, message: "El usuario ya existe" });
-                } else {
-                    usuariosDB.push(datosTecnico);
-                    localStorage.setItem("usuarios_sistema", JSON.stringify(usuariosDB));
-                    resolve({ success: true });
-                }
-            }, 300);
+        const response = await fetch(`${API_BASE_URL}/tecnicos`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(datosTecnico)
         });
+        return handleResponse(response);
     },
 
     getTecnicos: async function() {
-        return new Promise(resolve => {
-            let usuariosDB = JSON.parse(localStorage.getItem("usuarios_sistema")) || [];
-            resolve(usuariosDB.map(u => u.nombreFormateado));
-        });
+        const response = await fetch(`${API_BASE_URL}/tecnicos`, { headers: getAuthHeaders() });
+        return handleResponse(response);
     },
 
     getEquipos: async function() {
-        let temporales = JSON.parse(localStorage.getItem("db_simulada_equipos")) || [];
-        return new Promise(resolve => resolve(temporales));
+        const response = await fetch(`${API_BASE_URL}/equipos`, { headers: getAuthHeaders() });
+        return handleResponse(response);
     },
 
     guardarEquipo: async function(equipo) {
-        return new Promise(resolve => {
-            let temporales = JSON.parse(localStorage.getItem("db_simulada_equipos")) || [];
-            
-            if(equipo.id_interno) {
-                const idx = temporales.findIndex(t => t.id_interno === equipo.id_interno);
-                if(idx > -1) temporales[idx] = equipo;
-            } else {
-                let maxId = 0;
-                if (temporales.length > 0) maxId = Math.max(...temporales.map(t => parseInt(t.id_interno) || 0));
-                equipo.id_interno = maxId + 1; 
-                temporales.push(equipo);
-            }
-            
-            localStorage.setItem("db_simulada_equipos", JSON.stringify(temporales));
-            resolve({ success: true, id_interno: equipo.id_interno });
+        const isUpdate = !!equipo.id_interno;
+        const url = isUpdate ? `${API_BASE_URL}/equipos/${equipo.id_interno}` : `${API_BASE_URL}/equipos`;
+        const method = isUpdate ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method: method,
+            headers: getAuthHeaders(),
+            body: JSON.stringify(equipo)
         });
+        return handleResponse(response);
     },
 
     borrarEquipos: async function(idsArray) {
-        return new Promise(resolve => {
-            let temporales = JSON.parse(localStorage.getItem("db_simulada_equipos")) || [];
-            temporales = temporales.filter(reg => !idsArray.includes(reg.id_interno));
-            localStorage.setItem("db_simulada_equipos", JSON.stringify(temporales));
-            resolve({ success: true });
+        const response = await fetch(`${API_BASE_URL}/equipos/delete-many`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ ids: idsArray })
         });
+        return handleResponse(response);
     },
 
     guardarEvento: async function(evento) {
-        let historial = JSON.parse(localStorage.getItem("db_simulada_historial")) || [];
-        historial.unshift(evento);
-        localStorage.setItem("db_simulada_historial", JSON.stringify(historial));
-        return Promise.resolve();
+        const response = await fetch(`${API_BASE_URL}/historial`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(evento)
+        });
+        return handleResponse(response);
     },
     
     getHistorial: async function() {
-        return Promise.resolve(JSON.parse(localStorage.getItem("db_simulada_historial")) || []);
+        const response = await fetch(`${API_BASE_URL}/historial`, { headers: getAuthHeaders() });
+        return handleResponse(response);
     }
 };
 
@@ -89,13 +93,7 @@ const API_SERVER = {
 // FUNCIONES GLOBALES (Modales, Navegación y Eventos)
 // =====================================================================
 
-const usuariosPorDefecto = [
-    { user: "admin", pass: "admin123", nombreFormateado: "Administrador del Sistema", rol: "admin" },
-    { user: "tecnico1", pass: "1234", nombreFormateado: "Pérez Gómez, Juan", rol: "tecnico" }
-];
-if (!localStorage.getItem("usuarios_sistema")) {
-    localStorage.setItem("usuarios_sistema", JSON.stringify(usuariosPorDefecto));
-}
+// El bloque de usuarios por defecto se ha eliminado. Ahora los gestiona el servidor.
 
 function cerrarSesion() {
     sessionStorage.removeItem("usuarioLogueado");
